@@ -4,12 +4,12 @@ description: NestJS best practices and architecture patterns for building produc
 license: MIT
 metadata:
   author: nestjs-best-practices
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # NestJS Best Practices
 
-Comprehensive best practices guide for NestJS applications. Contains 37 rules across 10 categories, prioritized by impact to guide automated refactoring and code generation.
+Comprehensive best practices guide for NestJS applications. Contains 40 rules across 10 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply
 
@@ -43,16 +43,19 @@ Reference these guidelines when:
 
 - `arch-avoid-circular-deps` - Avoid circular module dependencies
 - `arch-feature-modules` - Organize by feature, not technical layer
+- `arch-module-sharing` - Proper module exports/imports, avoid duplicate providers
 - `arch-single-responsibility` - Focused services over "god services"
 - `arch-use-repository-pattern` - Abstract database logic for testability
 - `arch-use-events` - Event-driven architecture for decoupling
 
 ### 2. Dependency Injection (CRITICAL)
 
+- `di-avoid-service-locator` - Avoid service locator anti-pattern
+- `di-interface-segregation` - Interface Segregation Principle (ISP)
+- `di-liskov-substitution` - Liskov Substitution Principle (LSP)
 - `di-prefer-constructor-injection` - Constructor over property injection
 - `di-scope-awareness` - Understand singleton/request/transient scopes
 - `di-use-interfaces-tokens` - Use injection tokens for interfaces
-- `di-avoid-service-locator` - Avoid service locator anti-pattern
 
 ### 3. Error Handling (HIGH)
 
