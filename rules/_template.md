@@ -7,6 +7,8 @@ tags: tag1, tag2
 
 ## Rule Title Here
 
+**Impact: MEDIUM (optional impact description)**
+
 Brief explanation of the rule and why it matters. This should be clear and concise, explaining the performance implications.
 
 **Incorrect (description of what's wrong):**
@@ -23,4 +25,4 @@ const bad = example()
 const good = example()
 ```
 
-Reference: [NestJS Documentation](https://docs.nestjs.com)
+Reference: [Link to documentation or resource](https://example.com)
