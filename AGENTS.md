@@ -1,6 +1,6 @@
 # NestJS Best Practices
 
-**Version 1.0.0**
+**Version 1.1.0**
 NestJS Best Practices
 January 2026
 
@@ -14,7 +14,7 @@ January 2026
 
 ## Abstract
 
-Comprehensive best practices and architecture guide for NestJS applications, designed for AI agents and LLMs. Contains 37 rules across 10 categories, prioritized by impact from critical (architecture, dependency injection) to incremental (DevOps patterns). Each rule includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific impact metrics to guide automated refactoring and code generation.
+Comprehensive best practices and architecture guide for NestJS applications, designed for AI agents and LLMs. Contains 40 rules across 10 categories, prioritized by impact from critical (architecture, dependency injection) to incremental (DevOps patterns). Each rule includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific impact metrics to guide automated refactoring and code generation.
 
 ---
 
@@ -23,14 +23,17 @@ Comprehensive best practices and architecture guide for NestJS applications, des
 1. [Architecture](#1-architecture) — **CRITICAL**
    - 1.1 [Avoid Circular Dependencies](#11-avoid-circular-dependencies)
    - 1.2 [Organize by Feature Modules](#12-organize-by-feature-modules)
-   - 1.3 [Single Responsibility for Services](#13-single-responsibility-for-services)
-   - 1.4 [Use Event-Driven Architecture for Decoupling](#14-use-event-driven-architecture-for-decoupling)
-   - 1.5 [Use Repository Pattern for Data Access](#15-use-repository-pattern-for-data-access)
+   - 1.3 [Use Proper Module Sharing Patterns](#13-use-proper-module-sharing-patterns)
+   - 1.4 [Single Responsibility for Services](#14-single-responsibility-for-services)
+   - 1.5 [Use Event-Driven Architecture for Decoupling](#15-use-event-driven-architecture-for-decoupling)
+   - 1.6 [Use Repository Pattern for Data Access](#16-use-repository-pattern-for-data-access)
 2. [Dependency Injection](#2-dependency-injection) — **CRITICAL**
    - 2.1 [Avoid Service Locator Anti-Pattern](#21-avoid-service-locator-anti-pattern)
-   - 2.2 [Prefer Constructor Injection](#22-prefer-constructor-injection)
-   - 2.3 [Understand Provider Scopes](#23-understand-provider-scopes)
-   - 2.4 [Use Injection Tokens for Interfaces](#24-use-injection-tokens-for-interfaces)
+   - 2.2 [Apply Interface Segregation Principle](#22-apply-interface-segregation-principle)
+   - 2.3 [Honor Liskov Substitution Principle](#23-honor-liskov-substitution-principle)
+   - 2.4 [Prefer Constructor Injection](#24-prefer-constructor-injection)
+   - 2.5 [Understand Provider Scopes](#25-understand-provider-scopes)
+   - 2.6 [Use Injection Tokens for Interfaces](#26-use-injection-tokens-for-interfaces)
 3. [Error Handling](#3-error-handling) — **HIGH**
    - 3.1 [Handle Async Errors Properly](#31-handle-async-errors-properly)
    - 3.2 [Throw HTTP Exceptions from Services](#32-throw-http-exceptions-from-services)
@@ -232,7 +235,146 @@ Reference: [NestJS Modules](https://docs.nestjs.com/modules)
 
 ---
 
-### 1.3 Single Responsibility for Services
+### 1.3 Use Proper Module Sharing Patterns
+
+**Impact: CRITICAL** — Prevents duplicate instances, memory leaks, and state inconsistency
+
+NestJS modules are singletons by default. When a service is properly exported from a module and that module is imported elsewhere, the same instance is shared. However, providing a service in multiple modules creates separate instances, leading to memory waste, state inconsistency, and confusing behavior. Always encapsulate services in dedicated modules, export them explicitly, and import the module where needed.
+
+**Incorrect (service provided in multiple modules):**
+
+```typescript
+// StorageService provided directly in multiple modules - WRONG
+// storage.service.ts
+@Injectable()
+export class StorageService {
+  private cache = new Map(); // Each instance has separate state!
+
+  store(key: string, value: any) {
+    this.cache.set(key, value);
+  }
+}
+
+// app.module.ts
+@Module({
+  providers: [StorageService], // Instance #1
+  controllers: [AppController],
+})
+export class AppModule {}
+
+// videos.module.ts
+@Module({
+  providers: [StorageService], // Instance #2 - different from AppModule!
+  controllers: [VideosController],
+})
+export class VideosModule {}
+
+// Problems:
+// 1. Two separate StorageService instances exist
+// 2. cache.set() in VideosModule doesn't affect AppModule's cache
+// 3. Memory wasted on duplicate instances
+// 4. Debugging nightmares when state doesn't sync
+```
+
+**Correct (dedicated module with exports):**
+
+```typescript
+// storage/storage.module.ts
+@Module({
+  providers: [StorageService],
+  exports: [StorageService], // Make available to importers
+})
+export class StorageModule {}
+
+// videos/videos.module.ts
+@Module({
+  imports: [StorageModule], // Import the module, not the service
+  controllers: [VideosController],
+  providers: [VideosService],
+})
+export class VideosModule {}
+
+// channels/channels.module.ts
+@Module({
+  imports: [StorageModule], // Same instance shared
+  controllers: [ChannelsController],
+  providers: [ChannelsService],
+})
+export class ChannelsModule {}
+
+// app.module.ts
+@Module({
+  imports: [
+    StorageModule, // Only if AppModule itself needs StorageService
+    VideosModule,
+    ChannelsModule,
+  ],
+})
+export class AppModule {}
+
+// Now all modules share the SAME StorageService instance
+```
+
+**When to use @Global() (sparingly):**
+
+```typescript
+// ONLY for truly cross-cutting concerns
+@Global()
+@Module({
+  providers: [ConfigService, LoggerService],
+  exports: [ConfigService, LoggerService],
+})
+export class CoreModule {}
+
+// Import once in AppModule
+@Module({
+  imports: [CoreModule], // Registered globally, available everywhere
+})
+export class AppModule {}
+
+// Other modules don't need to import CoreModule
+@Module({
+  controllers: [UsersController],
+  providers: [UsersService], // Can inject ConfigService without importing
+})
+export class UsersModule {}
+
+// WARNING: Don't make everything global!
+// - Hides dependencies (can't see what a module needs from imports)
+// - Makes testing harder
+// - Reserve for: config, logging, database connections
+```
+
+**Module re-exporting pattern:**
+
+```typescript
+// common.module.ts - shared utilities
+@Module({
+  providers: [DateService, ValidationService],
+  exports: [DateService, ValidationService],
+})
+export class CommonModule {}
+
+// core.module.ts - re-exports common for convenience
+@Module({
+  imports: [CommonModule, DatabaseModule],
+  exports: [CommonModule, DatabaseModule], // Re-export for consumers
+})
+export class CoreModule {}
+
+// feature.module.ts - imports CoreModule, gets both
+@Module({
+  imports: [CoreModule], // Gets CommonModule + DatabaseModule
+  controllers: [FeatureController],
+})
+export class FeatureModule {}
+```
+
+Reference: [NestJS Modules](https://docs.nestjs.com/modules#shared-modules)
+
+---
+
+### 1.4 Single Responsibility for Services
 
 **Impact: CRITICAL** — "40%+ improvement in testability"
 
@@ -336,7 +478,7 @@ Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ---
 
-### 1.4 Use Event-Driven Architecture for Decoupling
+### 1.5 Use Event-Driven Architecture for Decoupling
 
 **Impact: MEDIUM-HIGH** — Enables async processing and modularity
 
@@ -442,7 +584,7 @@ Reference: [NestJS Events](https://docs.nestjs.com/techniques/events)
 
 ---
 
-### 1.5 Use Repository Pattern for Data Access
+### 1.6 Use Repository Pattern for Data Access
 
 **Impact: HIGH** — Decouples business logic from database
 
@@ -643,7 +785,389 @@ Reference: [NestJS Module Reference](https://docs.nestjs.com/fundamentals/module
 
 ---
 
-### 2.2 Prefer Constructor Injection
+### 2.2 Apply Interface Segregation Principle
+
+**Impact: HIGH** — Reduces coupling and improves testability by 30-50%
+
+Clients should not be forced to depend on interfaces they don't use. In NestJS, this means keeping interfaces small and focused on specific capabilities rather than creating "fat" interfaces that bundle unrelated methods. When a service only needs to send emails, it shouldn't depend on an interface that also includes SMS, push notifications, and logging. Split large interfaces into role-based ones.
+
+**Incorrect (fat interface forcing unused dependencies):**
+
+```typescript
+// Fat interface - forces all consumers to depend on everything
+interface NotificationService {
+  sendEmail(to: string, subject: string, body: string): Promise<void>;
+  sendSms(phone: string, message: string): Promise<void>;
+  sendPush(userId: string, notification: PushPayload): Promise<void>;
+  sendSlack(channel: string, message: string): Promise<void>;
+  logNotification(type: string, payload: any): Promise<void>;
+  getDeliveryStatus(id: string): Promise<DeliveryStatus>;
+  retryFailed(id: string): Promise<void>;
+  scheduleNotification(dto: ScheduleDto): Promise<string>;
+}
+
+// Consumer only needs email, but must mock everything for tests
+@Injectable()
+export class OrdersService {
+  constructor(
+    private notifications: NotificationService, // Depends on 8 methods, uses 1
+  ) {}
+
+  async confirmOrder(order: Order): Promise<void> {
+    await this.notifications.sendEmail(
+      order.customer.email,
+      'Order Confirmed',
+      `Your order ${order.id} has been confirmed.`,
+    );
+  }
+}
+
+// Testing is painful - must mock unused methods
+const mockNotificationService = {
+  sendEmail: jest.fn(),
+  sendSms: jest.fn(),           // Never used, but required
+  sendPush: jest.fn(),          // Never used, but required
+  sendSlack: jest.fn(),         // Never used, but required
+  logNotification: jest.fn(),   // Never used, but required
+  getDeliveryStatus: jest.fn(), // Never used, but required
+  retryFailed: jest.fn(),       // Never used, but required
+  scheduleNotification: jest.fn(), // Never used, but required
+};
+```
+
+**Correct (segregated interfaces by capability):**
+
+```typescript
+// Segregated interfaces - each focused on one capability
+interface EmailSender {
+  sendEmail(to: string, subject: string, body: string): Promise<void>;
+}
+
+interface SmsSender {
+  sendSms(phone: string, message: string): Promise<void>;
+}
+
+interface PushSender {
+  sendPush(userId: string, notification: PushPayload): Promise<void>;
+}
+
+interface NotificationLogger {
+  logNotification(type: string, payload: any): Promise<void>;
+}
+
+interface NotificationScheduler {
+  scheduleNotification(dto: ScheduleDto): Promise<string>;
+}
+
+// Implementation can implement multiple interfaces
+@Injectable()
+export class NotificationService implements EmailSender, SmsSender, PushSender {
+  async sendEmail(to: string, subject: string, body: string): Promise<void> {
+    // Email implementation
+  }
+
+  async sendSms(phone: string, message: string): Promise<void> {
+    // SMS implementation
+  }
+
+  async sendPush(userId: string, notification: PushPayload): Promise<void> {
+    // Push implementation
+  }
+}
+
+// Or separate implementations
+@Injectable()
+export class SendGridEmailService implements EmailSender {
+  async sendEmail(to: string, subject: string, body: string): Promise<void> {
+    // SendGrid-specific implementation
+  }
+}
+
+// Consumer depends only on what it needs
+@Injectable()
+export class OrdersService {
+  constructor(
+    @Inject(EMAIL_SENDER) private emailSender: EmailSender, // Minimal dependency
+  ) {}
+
+  async confirmOrder(order: Order): Promise<void> {
+    await this.emailSender.sendEmail(
+      order.customer.email,
+      'Order Confirmed',
+      `Your order ${order.id} has been confirmed.`,
+    );
+  }
+}
+
+// Testing is simple - only mock what's used
+const mockEmailSender: EmailSender = {
+  sendEmail: jest.fn(),
+};
+
+// Module registration with tokens
+export const EMAIL_SENDER = Symbol('EMAIL_SENDER');
+export const SMS_SENDER = Symbol('SMS_SENDER');
+
+@Module({
+  providers: [
+    { provide: EMAIL_SENDER, useClass: SendGridEmailService },
+    { provide: SMS_SENDER, useClass: TwilioSmsService },
+  ],
+  exports: [EMAIL_SENDER, SMS_SENDER],
+})
+export class NotificationModule {}
+```
+
+**Combining interfaces when needed:**
+
+```typescript
+// Sometimes a consumer legitimately needs multiple capabilities
+interface EmailAndSmsSender extends EmailSender, SmsSender {}
+
+// Or use intersection types
+type MultiChannelSender = EmailSender & SmsSender & PushSender;
+
+// Consumer that genuinely needs multiple channels
+@Injectable()
+export class AlertService {
+  constructor(
+    @Inject(MULTI_CHANNEL_SENDER)
+    private sender: EmailSender & SmsSender,
+  ) {}
+
+  async sendCriticalAlert(user: User, message: string): Promise<void> {
+    await Promise.all([
+      this.sender.sendEmail(user.email, 'Critical Alert', message),
+      this.sender.sendSms(user.phone, message),
+    ]);
+  }
+}
+```
+
+Reference: [Interface Segregation Principle](https://en.wikipedia.org/wiki/Interface_segregation_principle)
+
+---
+
+### 2.3 Honor Liskov Substitution Principle
+
+**Impact: HIGH** — Ensures implementations are truly interchangeable without breaking callers
+
+Subtypes must be substitutable for their base types without altering program correctness. In NestJS with dependency injection, this means any implementation of an interface or abstract class must honor the contract completely. A mock payment service used in tests must behave like a real payment service (return similar shapes, handle errors the same way). Violating LSP causes subtle bugs when swapping implementations.
+
+**Incorrect (implementation violates the contract):**
+
+```typescript
+// Base interface with clear contract
+interface PaymentGateway {
+  /**
+   * Charges the specified amount.
+   * @returns PaymentResult on success
+   * @throws PaymentFailedException on payment failure
+   */
+  charge(amount: number, currency: string): Promise<PaymentResult>;
+}
+
+// Production implementation - follows the contract
+@Injectable()
+export class StripeService implements PaymentGateway {
+  async charge(amount: number, currency: string): Promise<PaymentResult> {
+    const response = await this.stripe.charges.create({ amount, currency });
+    return { success: true, transactionId: response.id, amount };
+  }
+}
+
+// Mock that violates LSP - different behavior!
+@Injectable()
+export class MockPaymentService implements PaymentGateway {
+  async charge(amount: number, currency: string): Promise<PaymentResult> {
+    // VIOLATION 1: Throws for valid input (contract says return PaymentResult)
+    if (amount > 1000) {
+      throw new Error('Mock does not support large amounts');
+    }
+
+    // VIOLATION 2: Returns null instead of PaymentResult
+    if (currency !== 'USD') {
+      return null as any; // Real service would convert or reject properly
+    }
+
+    // VIOLATION 3: Missing required field
+    return { success: true } as PaymentResult; // Missing transactionId!
+  }
+}
+
+// Consumer trusts the contract
+@Injectable()
+export class OrdersService {
+  constructor(@Inject(PAYMENT_GATEWAY) private payment: PaymentGateway) {}
+
+  async checkout(order: Order): Promise<void> {
+    const result = await this.payment.charge(order.total, order.currency);
+    // These fail with MockPaymentService:
+    await this.saveTransaction(result.transactionId); // undefined!
+    await this.sendReceipt(result); // might be null!
+  }
+}
+```
+
+**Correct (implementations honor the contract):**
+
+```typescript
+// Well-defined interface with documented behavior
+interface PaymentGateway {
+  /**
+   * Charges the specified amount.
+   * @param amount - Amount in smallest currency unit (cents)
+   * @param currency - ISO 4217 currency code
+   * @returns PaymentResult with transactionId, success status, and amount
+   * @throws PaymentFailedException if charge is declined
+   * @throws InvalidCurrencyException if currency is not supported
+   */
+  charge(amount: number, currency: string): Promise<PaymentResult>;
+
+  /**
+   * Refunds a previous charge.
+   * @throws TransactionNotFoundException if transactionId is invalid
+   */
+  refund(transactionId: string, amount?: number): Promise<RefundResult>;
+}
+
+// Production implementation
+@Injectable()
+export class StripeService implements PaymentGateway {
+  async charge(amount: number, currency: string): Promise<PaymentResult> {
+    try {
+      const response = await this.stripe.charges.create({ amount, currency });
+      return {
+        success: true,
+        transactionId: response.id,
+        amount: response.amount,
+      };
+    } catch (error) {
+      if (error.type === 'card_error') {
+        throw new PaymentFailedException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async refund(transactionId: string, amount?: number): Promise<RefundResult> {
+    // Implementation...
+  }
+}
+
+// Mock that honors LSP - same contract, same behavior shape
+@Injectable()
+export class MockPaymentService implements PaymentGateway {
+  private transactions = new Map<string, PaymentResult>();
+
+  async charge(amount: number, currency: string): Promise<PaymentResult> {
+    // Honor the contract: validate currency like real service would
+    if (!['USD', 'EUR', 'GBP'].includes(currency)) {
+      throw new InvalidCurrencyException(`Unsupported currency: ${currency}`);
+    }
+
+    // Simulate decline for specific test scenarios
+    if (amount === 99999) {
+      throw new PaymentFailedException('Card declined (test scenario)');
+    }
+
+    // Return same shape as production
+    const result: PaymentResult = {
+      success: true,
+      transactionId: `mock_${Date.now()}_${Math.random().toString(36)}`,
+      amount,
+    };
+
+    this.transactions.set(result.transactionId, result);
+    return result;
+  }
+
+  async refund(transactionId: string, amount?: number): Promise<RefundResult> {
+    // Honor the contract: throw if transaction not found
+    if (!this.transactions.has(transactionId)) {
+      throw new TransactionNotFoundException(transactionId);
+    }
+
+    return {
+      success: true,
+      refundId: `refund_${transactionId}`,
+      amount: amount ?? this.transactions.get(transactionId)!.amount,
+    };
+  }
+}
+
+// Consumer can swap implementations safely
+@Injectable()
+export class OrdersService {
+  constructor(@Inject(PAYMENT_GATEWAY) private payment: PaymentGateway) {}
+
+  async checkout(order: Order): Promise<Order> {
+    try {
+      const result = await this.payment.charge(order.total, order.currency);
+      // Works with both StripeService and MockPaymentService
+      order.transactionId = result.transactionId;
+      order.status = 'paid';
+      return order;
+    } catch (error) {
+      if (error instanceof PaymentFailedException) {
+        order.status = 'payment_failed';
+        return order;
+      }
+      throw error;
+    }
+  }
+}
+```
+
+**Testing LSP compliance:**
+
+```typescript
+// Shared test suite that any implementation must pass
+function testPaymentGatewayContract(
+  createGateway: () => PaymentGateway,
+) {
+  describe('PaymentGateway contract', () => {
+    let gateway: PaymentGateway;
+
+    beforeEach(() => {
+      gateway = createGateway();
+    });
+
+    it('returns PaymentResult with all required fields', async () => {
+      const result = await gateway.charge(1000, 'USD');
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('transactionId');
+      expect(result).toHaveProperty('amount');
+      expect(typeof result.transactionId).toBe('string');
+    });
+
+    it('throws InvalidCurrencyException for unsupported currency', async () => {
+      await expect(gateway.charge(1000, 'INVALID'))
+        .rejects.toThrow(InvalidCurrencyException);
+    });
+
+    it('throws TransactionNotFoundException for invalid refund', async () => {
+      await expect(gateway.refund('nonexistent'))
+        .rejects.toThrow(TransactionNotFoundException);
+    });
+  });
+}
+
+// Run against all implementations
+describe('StripeService', () => {
+  testPaymentGatewayContract(() => new StripeService(mockStripeClient));
+});
+
+describe('MockPaymentService', () => {
+  testPaymentGatewayContract(() => new MockPaymentService());
+});
+```
+
+Reference: [Liskov Substitution Principle](https://en.wikipedia.org/wiki/Liskov_substitution_principle)
+
+---
+
+### 2.4 Prefer Constructor Injection
 
 **Impact: CRITICAL** — Required for proper DI and testing
 
@@ -727,7 +1251,7 @@ Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ---
 
-### 2.3 Understand Provider Scopes
+### 2.5 Understand Provider Scopes
 
 **Impact: CRITICAL** — Prevents data leaks and performance issues
 
@@ -819,7 +1343,7 @@ Reference: [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/inject
 
 ---
 
-### 2.4 Use Injection Tokens for Interfaces
+### 2.6 Use Injection Tokens for Interfaces
 
 **Impact: HIGH** — Enables interface-based DI at runtime
 
