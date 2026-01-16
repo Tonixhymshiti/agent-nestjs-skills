@@ -1,26 +1,18 @@
 ---
 title: Implement Health Checks for Microservices
 impact: MEDIUM-HIGH
-impactDescription: Health checks enable proper orchestration and self-healing
-tags:
-  - microservices
-  - health-checks
-  - kubernetes
-  - monitoring
+impactDescription: Health checks enable orchestrators to manage service lifecycle
+tags: microservices, health-checks, terminus, kubernetes
 ---
 
-# Implement Health Checks for Microservices
-
-**Impact: MEDIUM-HIGH** - Health checks enable orchestrators to manage service lifecycle
-
-## Explanation
+## Implement Health Checks for Microservices
 
 Implement liveness and readiness probes using `@nestjs/terminus`. Liveness checks determine if the service should be restarted. Readiness checks determine if the service can accept traffic. Proper health checks enable Kubernetes and load balancers to route traffic correctly.
 
-## Incorrect
+**Incorrect (simple ping that doesn't check dependencies):**
 
 ```typescript
-// DON'T: Simple ping that doesn't check dependencies
+// Simple ping that doesn't check dependencies
 @Controller('health')
 export class HealthController {
   @Get()
@@ -29,7 +21,7 @@ export class HealthController {
   }
 }
 
-// DON'T: Health check that blocks on slow dependencies
+// Health check that blocks on slow dependencies
 @Controller('health')
 export class HealthController {
   @Get()
@@ -43,7 +35,7 @@ export class HealthController {
 }
 ```
 
-## Correct
+**Correct (use @nestjs/terminus for comprehensive health checks):**
 
 ```typescript
 // Use @nestjs/terminus for comprehensive health checks
@@ -104,11 +96,7 @@ export class HealthController {
     ]);
   }
 }
-```
 
-## Custom Health Indicators
-
-```typescript
 // Custom indicator for business-specific health
 @Injectable()
 export class QueueHealthIndicator extends HealthIndicator {
@@ -161,9 +149,40 @@ readiness() {
     () => this.queue.isHealthy('job-queue'),
   ]);
 }
+
+// Graceful shutdown handling
+@Injectable()
+export class GracefulShutdownService implements OnApplicationShutdown {
+  private isShuttingDown = false;
+
+  isShutdown(): boolean {
+    return this.isShuttingDown;
+  }
+
+  async onApplicationShutdown(signal: string): Promise<void> {
+    this.isShuttingDown = true;
+    console.log(`Shutting down on ${signal}`);
+
+    // Wait for in-flight requests
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+}
+
+// Health check respects shutdown state
+@Get('ready')
+@HealthCheck()
+readiness() {
+  if (this.shutdownService.isShutdown()) {
+    throw new ServiceUnavailableException('Shutting down');
+  }
+
+  return this.health.check([
+    () => this.db.pingCheck('database'),
+  ]);
+}
 ```
 
-## Kubernetes Configuration
+### Kubernetes Configuration
 
 ```yaml
 # Kubernetes deployment with probes
@@ -204,49 +223,4 @@ spec:
             failureThreshold: 30
 ```
 
-## Graceful Shutdown
-
-```typescript
-// Proper shutdown handling
-@Injectable()
-export class GracefulShutdownService implements OnApplicationShutdown {
-  private isShuttingDown = false;
-
-  isShutdown(): boolean {
-    return this.isShuttingDown;
-  }
-
-  async onApplicationShutdown(signal: string): Promise<void> {
-    this.isShuttingDown = true;
-    console.log(`Shutting down on ${signal}`);
-
-    // Wait for in-flight requests
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-}
-
-// Health check respects shutdown state
-@Get('ready')
-@HealthCheck()
-readiness() {
-  if (this.shutdownService.isShutdown()) {
-    throw new ServiceUnavailableException('Shutting down');
-  }
-
-  return this.health.check([
-    () => this.db.pingCheck('database'),
-  ]);
-}
-```
-
-## Why This Matters
-
-- **Self-healing**: Kubernetes restarts unhealthy pods
-- **Traffic routing**: Load balancers skip unready instances
-- **Observability**: Know the state of your services
-- **Zero downtime**: Proper rolling deployments
-
-## Reference
-
-- [NestJS Terminus](https://docs.nestjs.com/recipes/terminus)
-- [Kubernetes Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+Reference: [NestJS Terminus](https://docs.nestjs.com/recipes/terminus)

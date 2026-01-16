@@ -1,26 +1,18 @@
 ---
 title: Use Exception Filters for Error Handling
 impact: HIGH
-impactDescription: Consistent error responses and centralized error logic
-tags:
-  - error-handling
-  - exception-filters
-  - http-exceptions
-  - consistency
+impactDescription: Consistent, centralized error handling
+tags: error-handling, exception-filters, consistency
 ---
 
-# Use Exception Filters for Error Handling
-
-**Impact: HIGH** - Exception filters provide consistent, centralized error handling
-
-## Explanation
+## Use Exception Filters for Error Handling
 
 Never catch exceptions and manually format error responses in controllers. Use NestJS exception filters to handle errors consistently across your application. Create custom exception filters for specific error types and a global filter for unhandled exceptions.
 
-## Incorrect
+**Incorrect (manual error handling in controllers):**
 
 ```typescript
-// DON'T: Manual error handling in controllers
+// Manual error handling in controllers
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -45,10 +37,10 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (exception filters with consistent handling):**
 
 ```typescript
-// DO: Use built-in and custom exceptions
+// Use built-in and custom exceptions
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -145,15 +137,4 @@ app.useGlobalFilters(
 export class AppModule {}
 ```
 
-## Why This Matters
-
-- **Consistency**: All errors follow the same response format
-- **Separation of concerns**: Controllers focus on business logic
-- **Logging**: Centralized error logging and monitoring
-- **Security**: Prevents leaking stack traces to clients
-- **Testability**: Exception behavior is predictable and testable
-
-## Reference
-
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
-- [Built-in HTTP Exceptions](https://docs.nestjs.com/exception-filters#built-in-http-exceptions)
+Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)

@@ -1,23 +1,15 @@
 ---
 title: Organize by Feature Modules
 impact: CRITICAL
-impactDescription: 3-5x faster onboarding and feature development
-tags:
-  - architecture
-  - modules
-  - organization
-  - scalability
+impactDescription: "3-5x faster onboarding and development"
+tags: architecture, modules, organization
 ---
 
-# Organize by Feature Modules
+## Organize by Feature Modules
 
-**Impact: CRITICAL** - Feature modules are the foundation of scalable NestJS architecture
+Organize your application into feature modules that encapsulate related functionality. Each feature module should be self-contained with its own controllers, services, entities, and DTOs. Avoid organizing by technical layer (all controllers together, all services together). This enables 3-5x faster onboarding and feature development.
 
-## Explanation
-
-Organize your application into feature modules that encapsulate related functionality. Each feature module should be self-contained with its own controllers, services, entities, and DTOs. Avoid organizing by technical layer (all controllers together, all services together).
-
-## Incorrect
+**Incorrect (technical layer organization):**
 
 ```typescript
 // Technical layer organization (anti-pattern)
@@ -37,7 +29,7 @@ src/
 └── app.module.ts  // Imports everything directly
 ```
 
-## Correct
+**Correct (feature module organization):**
 
 ```typescript
 // Feature module organization
@@ -87,15 +79,4 @@ export class UsersModule {}
 export class AppModule {}
 ```
 
-## Why This Matters
-
-- **Discoverability**: All related code is in one place
-- **Scalability**: Features can be developed independently
-- **Testability**: Feature modules are easier to test in isolation
-- **Team organization**: Different teams can own different features
-- **Microservice-ready**: Feature modules can become microservices
-
-## Reference
-
-- [NestJS Modules](https://docs.nestjs.com/modules)
-- [NestJS Fundamentals](https://docs.nestjs.com/fundamentals/dynamic-modules)
+Reference: [NestJS Modules](https://docs.nestjs.com/modules)

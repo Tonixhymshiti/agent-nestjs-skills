@@ -1,26 +1,18 @@
 ---
 title: Throw HTTP Exceptions from Services
 impact: HIGH
-impactDescription: Clean separation between business logic and HTTP concerns
-tags:
-  - error-handling
-  - exceptions
-  - services
-  - http
+impactDescription: Keeps controllers thin and simplifies error handling
+tags: error-handling, exceptions, services
 ---
 
-# Throw HTTP Exceptions from Services
-
-**Impact: HIGH** - Proper exception throwing simplifies error handling
-
-## Explanation
+## Throw HTTP Exceptions from Services
 
 It's acceptable (and often preferable) to throw `HttpException` subclasses from services in HTTP applications. This keeps controllers thin and allows services to communicate appropriate error states. For truly layer-agnostic services, use domain exceptions that map to HTTP status codes.
 
-## Incorrect
+**Incorrect (return error objects instead of throwing):**
 
 ```typescript
-// DON'T: Return error objects instead of throwing
+// Return error objects instead of throwing
 @Injectable()
 export class UsersService {
   async findById(id: string): Promise<{ user?: User; error?: string }> {
@@ -45,10 +37,10 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (throw exceptions directly from service):**
 
 ```typescript
-// DO: Throw exceptions directly from service
+// Throw exceptions directly from service
 @Injectable()
 export class UsersService {
   constructor(private readonly repo: UserRepository) {}
@@ -119,36 +111,4 @@ export class EntityNotFoundFilter implements ExceptionFilter {
 }
 ```
 
-## Built-in HTTP Exceptions
-
-```typescript
-// Use the appropriate built-in exception
-throw new BadRequestException('Invalid input');      // 400
-throw new UnauthorizedException('Not authenticated'); // 401
-throw new ForbiddenException('Access denied');       // 403
-throw new NotFoundException('Resource not found');   // 404
-throw new ConflictException('Resource exists');      // 409
-throw new UnprocessableEntityException('Invalid');   // 422
-throw new InternalServerErrorException('Error');     // 500
-
-// With detailed error object
-throw new BadRequestException({
-  message: 'Validation failed',
-  errors: [
-    { field: 'email', message: 'Invalid email format' },
-    { field: 'age', message: 'Must be positive' },
-  ],
-});
-```
-
-## Why This Matters
-
-- **Thin controllers**: Controllers only route requests
-- **Cleaner code**: No error checking boilerplate
-- **Predictable flow**: Exceptions bubble up automatically
-- **Testability**: Services can be tested for exception throwing
-
-## Reference
-
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
-- [Built-in HTTP Exceptions](https://docs.nestjs.com/exception-filters#built-in-http-exceptions)
+Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)

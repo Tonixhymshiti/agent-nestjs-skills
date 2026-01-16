@@ -1,26 +1,18 @@
 ---
 title: Use Message Queues for Background Jobs
 impact: MEDIUM-HIGH
-impactDescription: Queues enable reliable async processing and workload distribution
-tags:
-  - microservices
-  - queues
-  - background-jobs
-  - bullmq
+impactDescription: Queues enable reliable background processing
+tags: microservices, queues, bullmq, background-jobs
 ---
 
-# Use Message Queues for Background Jobs
-
-**Impact: MEDIUM-HIGH** - Queues enable reliable background processing
-
-## Explanation
+## Use Message Queues for Background Jobs
 
 Use `@nestjs/bullmq` for background job processing. Queues decouple long-running tasks from HTTP requests, enable retry logic, and distribute workload across workers. Use them for emails, file processing, notifications, and any task that shouldn't block user requests.
 
-## Incorrect
+**Incorrect (long-running tasks in HTTP handlers):**
 
 ```typescript
-// DON'T: Long-running tasks in HTTP handlers
+// Long-running tasks in HTTP handlers
 @Controller('reports')
 export class ReportsController {
   @Post()
@@ -33,7 +25,7 @@ export class ReportsController {
   }
 }
 
-// DON'T: Fire-and-forget without retry
+// Fire-and-forget without retry
 @Injectable()
 export class EmailService {
   async sendWelcome(email: string): Promise<void> {
@@ -43,13 +35,13 @@ export class EmailService {
   }
 }
 
-// DON'T: Use setInterval for scheduled tasks
+// Use setInterval for scheduled tasks
 setInterval(async () => {
   await cleanupOldRecords();
 }, 60000); // No error handling, memory leaks
 ```
 
-## Correct
+**Correct (use BullMQ for background processing):**
 
 ```typescript
 // Configure BullMQ
@@ -147,11 +139,8 @@ export class ReportsProcessor {
     this.logger.error(`Job ${job.id} failed: ${error.message}`);
   }
 }
-```
 
-## Email Queue with Retry
-
-```typescript
+// Email queue with retry
 @Processor('email')
 export class EmailProcessor {
   @Process('send')
@@ -191,12 +180,8 @@ export class NotificationService {
     );
   }
 }
-```
 
-## Scheduled Jobs
-
-```typescript
-// Use Bull's repeatable jobs instead of cron
+// Scheduled jobs
 @Injectable()
 export class ScheduledJobsService implements OnModuleInit {
   constructor(@InjectQueue('maintenance') private queue: Queue) {}
@@ -240,12 +225,8 @@ export class MaintenanceProcessor {
     }
   }
 }
-```
 
-## Queue Monitoring
-
-```typescript
-// Add Bull Board for monitoring
+// Queue monitoring with Bull Board
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
@@ -268,14 +249,4 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 export class AdminModule {}
 ```
 
-## Why This Matters
-
-- **Reliability**: Jobs persist through restarts, automatic retry
-- **Scalability**: Distribute load across multiple workers
-- **User experience**: Fast responses, background processing
-- **Observability**: Track job status, monitor queues
-
-## Reference
-
-- [NestJS Queues](https://docs.nestjs.com/techniques/queues)
-- [BullMQ Documentation](https://docs.bullmq.io/)
+Reference: [NestJS Queues](https://docs.nestjs.com/techniques/queues)

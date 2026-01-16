@@ -1,26 +1,18 @@
 ---
 title: Use Event-Driven Architecture for Decoupling
 impact: MEDIUM-HIGH
-impactDescription: Events reduce coupling between modules and improve scalability
-tags:
-  - architecture
-  - events
-  - decoupling
-  - scalability
+impactDescription: Enables async processing and modularity
+tags: architecture, events, decoupling
 ---
 
-# Use Event-Driven Architecture for Decoupling
-
-**Impact: MEDIUM-HIGH** - Events decouple modules and enable asynchronous processing
-
-## Explanation
+## Use Event-Driven Architecture for Decoupling
 
 Use `@nestjs/event-emitter` for intra-service events and message brokers for inter-service communication. Events allow modules to react to changes without direct dependencies, improving modularity and enabling async processing.
 
-## Incorrect
+**Incorrect (direct service coupling):**
 
 ```typescript
-// DON'T: Direct service coupling
+// Direct service coupling
 @Injectable()
 export class OrdersService {
   constructor(
@@ -47,7 +39,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (event-driven decoupling):**
 
 ```typescript
 // Use EventEmitter for decoupling
@@ -113,132 +105,4 @@ export class AnalyticsListener {
 }
 ```
 
-## Configure Event Emitter
-
-```typescript
-// app.module.ts
-import { EventEmitterModule } from '@nestjs/event-emitter';
-
-@Module({
-  imports: [
-    EventEmitterModule.forRoot({
-      wildcard: true,
-      delimiter: '.',
-      newListener: false,
-      removeListener: false,
-      maxListeners: 10,
-      verboseMemoryLeak: true,
-      ignoreErrors: false,
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Async Event Handling
-
-```typescript
-// Handle events asynchronously
-@Injectable()
-export class HeavyProcessingListener {
-  @OnEvent('order.created', { async: true })
-  async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
-    // This runs asynchronously, doesn't block the order creation
-    await this.heavyProcessing(event);
-  }
-}
-
-// Use promisify option for waiting on all handlers
-@Injectable()
-export class OrdersService {
-  async createOrder(dto: CreateOrderDto): Promise<Order> {
-    const order = await this.repo.save(dto);
-
-    // Wait for critical handlers
-    await this.eventEmitter.emitAsync(
-      'order.created',
-      new OrderCreatedEvent(order.id, order.userId, order.items, order.total),
-    );
-
-    return order;
-  }
-}
-```
-
-## Event Patterns
-
-```typescript
-// Wildcard listeners
-@OnEvent('order.*')
-handleAllOrderEvents(event: any): void {
-  this.logger.log('Order event received', event);
-}
-
-// Multiple events
-@OnEvent(['order.created', 'order.updated'])
-handleOrderChanges(event: OrderEvent): void {
-  await this.searchIndex.update(event);
-}
-
-// Prioritized handlers
-@OnEvent('order.created', { prependListener: true })
-handleFirst(event: OrderCreatedEvent): void {
-  // Runs before other handlers
-}
-```
-
-## Saga Pattern for Complex Flows
-
-```typescript
-// Orchestrate multi-step processes with events
-@Injectable()
-export class OrderSaga {
-  @OnEvent('order.created')
-  async startOrderSaga(event: OrderCreatedEvent): Promise<void> {
-    try {
-      // Step 1: Reserve inventory
-      await this.inventoryService.reserve(event.items);
-      this.eventEmitter.emit('order.inventory_reserved', event);
-    } catch (error) {
-      this.eventEmitter.emit('order.failed', { ...event, reason: 'inventory' });
-    }
-  }
-
-  @OnEvent('order.inventory_reserved')
-  async processPayment(event: OrderCreatedEvent): Promise<void> {
-    try {
-      // Step 2: Process payment
-      await this.paymentService.charge(event.userId, event.total);
-      this.eventEmitter.emit('order.payment_completed', event);
-    } catch (error) {
-      // Compensating action
-      await this.inventoryService.release(event.items);
-      this.eventEmitter.emit('order.failed', { ...event, reason: 'payment' });
-    }
-  }
-
-  @OnEvent('order.payment_completed')
-  async completeOrder(event: OrderCreatedEvent): Promise<void> {
-    await this.ordersService.markComplete(event.orderId);
-    this.eventEmitter.emit('order.completed', event);
-  }
-
-  @OnEvent('order.failed')
-  async handleFailure(event: OrderFailedEvent): Promise<void> {
-    await this.ordersService.markFailed(event.orderId, event.reason);
-    await this.notificationService.notifyFailure(event.userId);
-  }
-}
-```
-
-## Why This Matters
-
-- **Decoupling**: Modules don't need to know about each other
-- **Extensibility**: Add new behavior without changing existing code
-- **Scalability**: Async handlers don't block main flow
-- **Testability**: Test components independently
-
-## Reference
-
-- [NestJS Events](https://docs.nestjs.com/techniques/events)
-- [Event-Driven Architecture](https://martinfowler.com/articles/201701-event-driven.html)
+Reference: [NestJS Events](https://docs.nestjs.com/techniques/events)

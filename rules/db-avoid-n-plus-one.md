@@ -1,26 +1,18 @@
 ---
 title: Avoid N+1 Query Problems
 impact: HIGH
-impactDescription: N+1 queries cause exponential database load and slow responses
-tags:
-  - database
-  - performance
-  - typeorm
-  - queries
+impactDescription: N+1 queries are one of the most common performance killers
+tags: database, n-plus-one, queries, performance
 ---
 
-# Avoid N+1 Query Problems
-
-**Impact: HIGH** - N+1 queries are one of the most common performance killers
-
-## Explanation
+## Avoid N+1 Query Problems
 
 N+1 queries occur when you fetch a list of entities, then make an additional query for each entity to load related data. Use eager loading with `relations`, query builder joins, or DataLoader to batch queries efficiently.
 
-## Incorrect
+**Incorrect (lazy loading in loops causes N+1):**
 
 ```typescript
-// DON'T: Lazy loading in loops causes N+1
+// Lazy loading in loops causes N+1
 @Injectable()
 export class OrdersService {
   async getOrdersWithItems(userId: string): Promise<Order[]> {
@@ -36,7 +28,7 @@ export class OrdersService {
   }
 }
 
-// DON'T: Accessing lazy relations without loading
+// Accessing lazy relations without loading
 @Controller('users')
 export class UsersController {
   @Get()
@@ -48,7 +40,7 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (use relations for eager loading):**
 
 ```typescript
 // Use relations option for eager loading
@@ -105,12 +97,8 @@ async getOrderSummaries(userId: string): Promise<OrderSummary[]> {
     },
   });
 }
-```
 
-## DataLoader for GraphQL
-
-```typescript
-// Use DataLoader to batch and cache queries
+// Use DataLoader for GraphQL to batch and cache queries
 import DataLoader from 'dataloader';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -140,39 +128,12 @@ async posts(@Parent() user: User): Promise<Post[]> {
   // DataLoader batches multiple calls into single query
   return this.postsLoader.batchPosts.load(user.id);
 }
-```
 
-## Detecting N+1 Queries
-
-```typescript
-// Enable query logging in development
+// Enable query logging in development to detect N+1
 TypeOrmModule.forRoot({
   logging: ['query', 'error'],
   logger: 'advanced-console',
 });
-
-// Or use a custom logger to detect patterns
-@Injectable()
-export class QueryLogger implements Logger {
-  private queryCount = 0;
-
-  logQuery(query: string) {
-    this.queryCount++;
-    if (this.queryCount > 10) {
-      console.warn(`Possible N+1 detected: ${this.queryCount} queries`);
-    }
-  }
-}
 ```
 
-## Why This Matters
-
-- **Performance**: N+1 queries scale terribly (100 items = 101 queries)
-- **Database load**: Each query has overhead (connection, parsing, execution)
-- **Latency**: Sequential queries add up quickly
-- **Scalability**: Problems multiply under load
-
-## Reference
-
-- [TypeORM Relations](https://typeorm.io/relations)
-- [TypeORM Query Builder](https://typeorm.io/select-query-builder)
+Reference: [TypeORM Relations](https://typeorm.io/relations)

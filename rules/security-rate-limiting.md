@@ -1,26 +1,18 @@
 ---
 title: Implement Rate Limiting
 impact: HIGH
-impactDescription: Prevents abuse, DoS attacks, and resource exhaustion
-tags:
-  - security
-  - rate-limiting
-  - throttling
-  - ddos
+impactDescription: Protects against abuse and ensures fair resource usage
+tags: security, rate-limiting, throttler, protection
 ---
 
-# Implement Rate Limiting
-
-**Impact: HIGH** - Rate limiting protects against abuse and ensures fair resource usage
-
-## Explanation
+## Implement Rate Limiting
 
 Use `@nestjs/throttler` to limit request rates per client. Apply different limits for different endpoints - stricter for auth endpoints, more relaxed for read operations. Consider using Redis for distributed rate limiting in clustered deployments.
 
-## Incorrect
+**Incorrect (no rate limiting on sensitive endpoints):**
 
 ```typescript
-// DON'T: No rate limiting on sensitive endpoints
+// No rate limiting on sensitive endpoints
 @Controller('auth')
 export class AuthController {
   @Post('login')
@@ -36,7 +28,7 @@ export class AuthController {
   }
 }
 
-// DON'T: Same limits for all endpoints
+// Same limits for all endpoints
 @UseGuards(ThrottlerGuard)
 @Controller('api')
 export class ApiController {
@@ -48,7 +40,7 @@ export class ApiController {
 }
 ```
 
-## Correct
+**Correct (configured throttler with endpoint-specific limits):**
 
 ```typescript
 // Configure throttler globally with multiple limits
@@ -110,50 +102,6 @@ export class HealthController {
 }
 
 // Custom throttle per user type
-@Controller('api')
-export class ApiController {
-  @Get('data')
-  @SkipThrottle({ short: true }) // Skip short limit, keep others
-  async getData() {
-    return this.service.getData();
-  }
-}
-```
-
-## Redis-Based Distributed Rate Limiting
-
-```typescript
-// Use Redis for clustered deployments
-import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import Redis from 'ioredis';
-
-@Module({
-  imports: [
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        throttlers: [
-          { name: 'short', ttl: 1000, limit: 3 },
-          { name: 'long', ttl: 60000, limit: 100 },
-        ],
-        storage: new ThrottlerStorageRedisService(
-          new Redis({
-            host: config.get('REDIS_HOST'),
-            port: config.get('REDIS_PORT'),
-          }),
-        ),
-      }),
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Custom Rate Limit by User
-
-```typescript
-// Different limits for authenticated vs anonymous
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
@@ -172,46 +120,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     return 50; // Anonymous users
   }
 }
-
-// Rate limit by API key
-@Injectable()
-export class ApiKeyThrottlerGuard extends ThrottlerGuard {
-  constructor(
-    private apiKeyService: ApiKeyService,
-    options: ThrottlerModuleOptions,
-    storageService: ThrottlerStorage,
-    reflector: Reflector,
-  ) {
-    super(options, storageService, reflector);
-  }
-
-  protected async getTracker(req: Request): Promise<string> {
-    const apiKey = req.headers['x-api-key'] as string;
-    return apiKey || req.ip;
-  }
-
-  protected async getLimit(context: ExecutionContext): Promise<number> {
-    const request = context.switchToHttp().getRequest();
-    const apiKey = request.headers['x-api-key'];
-
-    if (apiKey) {
-      const keyConfig = await this.apiKeyService.getConfig(apiKey);
-      return keyConfig?.rateLimit || 100;
-    }
-
-    return 10; // No API key
-  }
-}
 ```
 
-## Why This Matters
-
-- **DoS prevention**: Stops resource exhaustion attacks
-- **Brute force protection**: Limits credential guessing
-- **Fair usage**: Ensures resources for all users
-- **Cost control**: Prevents unexpected infrastructure costs
-
-## Reference
-
-- [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)
-- [@nestjs/throttler](https://github.com/nestjs/throttler)
+Reference: [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)

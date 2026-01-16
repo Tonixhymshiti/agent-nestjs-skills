@@ -1,26 +1,18 @@
 ---
 title: Use Structured Logging
 impact: MEDIUM-HIGH
-impactDescription: Structured logs enable efficient debugging and monitoring
-tags:
-  - devops
-  - logging
-  - observability
-  - monitoring
+impactDescription: Structured logging enables effective debugging and monitoring
+tags: devops, logging, structured-logs, pino
 ---
 
-# Use Structured Logging
-
-**Impact: MEDIUM-HIGH** - Structured logging enables effective debugging and monitoring
-
-## Explanation
+## Use Structured Logging
 
 Use NestJS Logger with structured JSON output in production. Include contextual information (request ID, user ID, operation) to trace requests across services. Avoid console.log and implement proper log levels.
 
-## Incorrect
+**Incorrect (using console.log in production):**
 
 ```typescript
-// DON'T: Use console.log in production
+// Use console.log in production
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -38,15 +30,15 @@ export class UsersService {
   }
 }
 
-// DON'T: Log sensitive data
+// Log sensitive data
 console.log('Login attempt:', { email, password }); // SECURITY RISK!
 
-// DON'T: Inconsistent log format
+// Inconsistent log format
 logger.log('User ' + userId + ' created at ' + new Date());
 // Hard to parse, no structure
 ```
 
-## Correct
+**Correct (use structured logging with context):**
 
 ```typescript
 // Configure logger in main.ts
@@ -128,12 +120,8 @@ export class JsonLogger implements LoggerService {
     );
   }
 }
-```
 
-## Request Context Logging
-
-```typescript
-// Use ClsModule for request-scoped context
+// Request context logging with ClsModule
 import { ClsModule, ClsService } from 'nestjs-cls';
 
 @Module({
@@ -197,12 +185,8 @@ export class ContextLogger {
     );
   }
 }
-```
 
-## Pino Integration for Performance
-
-```typescript
-// Use Pino for high-performance logging
+// Pino integration for high-performance logging
 import { LoggerModule } from 'nestjs-pino';
 
 @Module({
@@ -245,14 +229,4 @@ export class UsersService {
 }
 ```
 
-## Why This Matters
-
-- **Debugging**: Find issues quickly with searchable logs
-- **Monitoring**: Feed structured logs to observability tools
-- **Compliance**: Audit trails with consistent format
-- **Performance**: Pino is 5x faster than console.log
-
-## Reference
-
-- [NestJS Logger](https://docs.nestjs.com/techniques/logger)
-- [nestjs-pino](https://github.com/iamolegga/nestjs-pino)
+Reference: [NestJS Logger](https://docs.nestjs.com/techniques/logger)

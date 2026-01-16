@@ -2,11 +2,11 @@
 
 **Version:** 1.0.0
 **Organization:** NestJS Best Practices
-**Published:** 2026-01
+**Published:** undefined
 
 ## Abstract
 
-Comprehensive best practices and performance optimization guide for NestJS applications, designed for AI agents and LLMs. Contains 50+ rules across 10 categories covering architecture patterns, dependency injection, error handling, security, performance, testing, microservices, database access, API design, and deployment. Each rule includes impact assessment, code examples demonstrating incorrect and correct patterns, and references to official documentation.
+Comprehensive best practices and architecture guide for NestJS applications, designed for AI agents and LLMs. Contains 37 rules across 10 categories, prioritized by impact from critical (architecture, dependency injection) to incremental (DevOps patterns). Each rule includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific impact metrics to guide automated refactoring and code generation.
 
 ---
 
@@ -88,13 +88,11 @@ Comprehensive best practices and performance optimization guide for NestJS appli
 
 ### 1.1 Avoid Circular Dependencies
 
-**Impact: CRITICAL** - Prevents runtime crashes and unpredictable behavior
+**Impact: CRITICAL** - "#1 cause of runtime crashes"
 
-## Explanation
+Circular dependencies occur when Module A imports Module B, and Module B imports Module A (directly or transitively). NestJS can sometimes resolve these through forward references, but they indicate architectural problems and should be avoided. This is the #1 cause of runtime crashes in NestJS applications.
 
-Circular dependencies occur when Module A imports Module B, and Module B imports Module A (directly or transitively). NestJS can sometimes resolve these through forward references, but they indicate architectural problems and should be avoided.
-
-## Incorrect
+**Incorrect (circular module imports):**
 
 ```typescript
 // users.module.ts
@@ -114,7 +112,7 @@ export class UsersModule {}
 export class OrdersModule {}
 ```
 
-## Correct
+**Correct (extract shared logic or use events):**
 
 ```typescript
 // Option 1: Extract shared logic to a third module
@@ -162,29 +160,17 @@ export class OrdersService {
 }
 ```
 
-## Why This Matters
-
-- **Runtime crashes**: Circular dependencies can cause `undefined` errors at runtime
-- **Testing difficulty**: Circular deps make unit testing nearly impossible
-- **Maintenance nightmare**: Tightly coupled modules are hard to change independently
-- **Build issues**: Some bundlers fail with circular dependencies
-
-## Reference
-
-- [NestJS Circular Dependency](https://docs.nestjs.com/fundamentals/circular-dependency)
-- [Forward Reference](https://docs.nestjs.com/fundamentals/circular-dependency#forward-reference)
+Reference: [NestJS Circular Dependency](https://docs.nestjs.com/fundamentals/circular-dependency)
 
 ---
 
 ### 1.2 Organize by Feature Modules
 
-**Impact: CRITICAL** - 3-5x faster onboarding and feature development
+**Impact: CRITICAL** - "3-5x faster onboarding and development"
 
-## Explanation
+Organize your application into feature modules that encapsulate related functionality. Each feature module should be self-contained with its own controllers, services, entities, and DTOs. Avoid organizing by technical layer (all controllers together, all services together). This enables 3-5x faster onboarding and feature development.
 
-Organize your application into feature modules that encapsulate related functionality. Each feature module should be self-contained with its own controllers, services, entities, and DTOs. Avoid organizing by technical layer (all controllers together, all services together).
-
-## Incorrect
+**Incorrect (technical layer organization):**
 
 ```typescript
 // Technical layer organization (anti-pattern)
@@ -204,7 +190,7 @@ src/
 └── app.module.ts  // Imports everything directly
 ```
 
-## Correct
+**Correct (feature module organization):**
 
 ```typescript
 // Feature module organization
@@ -254,30 +240,17 @@ export class UsersModule {}
 export class AppModule {}
 ```
 
-## Why This Matters
-
-- **Discoverability**: All related code is in one place
-- **Scalability**: Features can be developed independently
-- **Testability**: Feature modules are easier to test in isolation
-- **Team organization**: Different teams can own different features
-- **Microservice-ready**: Feature modules can become microservices
-
-## Reference
-
-- [NestJS Modules](https://docs.nestjs.com/modules)
-- [NestJS Fundamentals](https://docs.nestjs.com/fundamentals/dynamic-modules)
+Reference: [NestJS Modules](https://docs.nestjs.com/modules)
 
 ---
 
 ### 1.3 Single Responsibility for Services
 
-**Impact: CRITICAL** - Reduces complexity and improves testability by 40%+
+**Impact: CRITICAL** - "40%+ improvement in testability"
 
-## Explanation
+Each service should have a single, well-defined responsibility. Avoid "god services" that handle multiple unrelated concerns. If a service name includes "And" or handles more than one domain concept, it likely violates single responsibility. This reduces complexity and improves testability by 40%+.
 
-Each service should have a single, well-defined responsibility. Avoid "god services" that handle multiple unrelated concerns. If a service name includes "And" or handles more than one domain concept, it likely violates single responsibility.
-
-## Incorrect
+**Incorrect (god service anti-pattern):**
 
 ```typescript
 // God service anti-pattern
@@ -313,7 +286,7 @@ export class UserAndOrderService {
 }
 ```
 
-## Correct
+**Correct (focused services with single responsibility):**
 
 ```typescript
 // Focused services with single responsibility
@@ -371,32 +344,20 @@ export class OrdersController {
 }
 ```
 
-## Why This Matters
-
-- **Testability**: Small services are easier to unit test
-- **Reusability**: Focused services can be reused across features
-- **Maintainability**: Changes to one concern don't affect others
-- **Team velocity**: Multiple developers can work on different services
-
-## Reference
-
-- [SOLID Principles](https://en.wikipedia.org/wiki/Single-responsibility_principle)
-- [NestJS Providers](https://docs.nestjs.com/providers)
+Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ---
 
 ### 1.4 Use Event-Driven Architecture for Decoupling
 
-**Impact: MEDIUM-HIGH** - Events reduce coupling between modules and improve scalability
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Enables async processing and modularity
 
 Use `@nestjs/event-emitter` for intra-service events and message brokers for inter-service communication. Events allow modules to react to changes without direct dependencies, improving modularity and enabling async processing.
 
-## Incorrect
+**Incorrect (direct service coupling):**
 
 ```typescript
-// DON'T: Direct service coupling
+// Direct service coupling
 @Injectable()
 export class OrdersService {
   constructor(
@@ -423,7 +384,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (event-driven decoupling):**
 
 ```typescript
 // Use EventEmitter for decoupling
@@ -489,150 +450,20 @@ export class AnalyticsListener {
 }
 ```
 
-## Configure Event Emitter
-
-```typescript
-// app.module.ts
-import { EventEmitterModule } from '@nestjs/event-emitter';
-
-@Module({
-  imports: [
-    EventEmitterModule.forRoot({
-      wildcard: true,
-      delimiter: '.',
-      newListener: false,
-      removeListener: false,
-      maxListeners: 10,
-      verboseMemoryLeak: true,
-      ignoreErrors: false,
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Async Event Handling
-
-```typescript
-// Handle events asynchronously
-@Injectable()
-export class HeavyProcessingListener {
-  @OnEvent('order.created', { async: true })
-  async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
-    // This runs asynchronously, doesn't block the order creation
-    await this.heavyProcessing(event);
-  }
-}
-
-// Use promisify option for waiting on all handlers
-@Injectable()
-export class OrdersService {
-  async createOrder(dto: CreateOrderDto): Promise<Order> {
-    const order = await this.repo.save(dto);
-
-    // Wait for critical handlers
-    await this.eventEmitter.emitAsync(
-      'order.created',
-      new OrderCreatedEvent(order.id, order.userId, order.items, order.total),
-    );
-
-    return order;
-  }
-}
-```
-
-## Event Patterns
-
-```typescript
-// Wildcard listeners
-@OnEvent('order.*')
-handleAllOrderEvents(event: any): void {
-  this.logger.log('Order event received', event);
-}
-
-// Multiple events
-@OnEvent(['order.created', 'order.updated'])
-handleOrderChanges(event: OrderEvent): void {
-  await this.searchIndex.update(event);
-}
-
-// Prioritized handlers
-@OnEvent('order.created', { prependListener: true })
-handleFirst(event: OrderCreatedEvent): void {
-  // Runs before other handlers
-}
-```
-
-## Saga Pattern for Complex Flows
-
-```typescript
-// Orchestrate multi-step processes with events
-@Injectable()
-export class OrderSaga {
-  @OnEvent('order.created')
-  async startOrderSaga(event: OrderCreatedEvent): Promise<void> {
-    try {
-      // Step 1: Reserve inventory
-      await this.inventoryService.reserve(event.items);
-      this.eventEmitter.emit('order.inventory_reserved', event);
-    } catch (error) {
-      this.eventEmitter.emit('order.failed', { ...event, reason: 'inventory' });
-    }
-  }
-
-  @OnEvent('order.inventory_reserved')
-  async processPayment(event: OrderCreatedEvent): Promise<void> {
-    try {
-      // Step 2: Process payment
-      await this.paymentService.charge(event.userId, event.total);
-      this.eventEmitter.emit('order.payment_completed', event);
-    } catch (error) {
-      // Compensating action
-      await this.inventoryService.release(event.items);
-      this.eventEmitter.emit('order.failed', { ...event, reason: 'payment' });
-    }
-  }
-
-  @OnEvent('order.payment_completed')
-  async completeOrder(event: OrderCreatedEvent): Promise<void> {
-    await this.ordersService.markComplete(event.orderId);
-    this.eventEmitter.emit('order.completed', event);
-  }
-
-  @OnEvent('order.failed')
-  async handleFailure(event: OrderFailedEvent): Promise<void> {
-    await this.ordersService.markFailed(event.orderId, event.reason);
-    await this.notificationService.notifyFailure(event.userId);
-  }
-}
-```
-
-## Why This Matters
-
-- **Decoupling**: Modules don't need to know about each other
-- **Extensibility**: Add new behavior without changing existing code
-- **Scalability**: Async handlers don't block main flow
-- **Testability**: Test components independently
-
-## Reference
-
-- [NestJS Events](https://docs.nestjs.com/techniques/events)
-- [Event-Driven Architecture](https://martinfowler.com/articles/201701-event-driven.html)
+Reference: [NestJS Events](https://docs.nestjs.com/techniques/events)
 
 ---
 
 ### 1.5 Use Repository Pattern for Data Access
 
-**Impact: HIGH** - Abstracts database logic and improves testability
-
-## Explanation
+**Impact: HIGH** - Decouples business logic from database
 
 Create custom repositories to encapsulate complex queries and database logic. This keeps services focused on business logic, makes testing easier with mock repositories, and allows changing database implementations without affecting business code.
 
-## Incorrect
+**Incorrect (complex queries in services):**
 
 ```typescript
-// DON'T: Complex queries in services
+// Complex queries in services
 @Injectable()
 export class UsersService {
   constructor(
@@ -652,32 +483,11 @@ export class UsersService {
       .getMany();
   }
 
-  async findByEmailDomain(domain: string): Promise<User[]> {
-    // Another complex query
-    return this.repo
-      .createQueryBuilder('user')
-      .where('user.email LIKE :domain', { domain: `%@${domain}` })
-      .andWhere('user.verified = :verified', { verified: true })
-      .getMany();
-  }
-
   // Service becomes bloated with query logic
-}
-
-// DON'T: Duplicate queries across services
-@Injectable()
-export class ReportsService {
-  async generateUserReport(): Promise<Report> {
-    // Same query logic duplicated here
-    const users = await this.userRepo
-      .createQueryBuilder('user')
-      .where('user.isActive = :active', { active: true })
-      .getMany();
-  }
 }
 ```
 
-## Correct
+**Correct (custom repository with encapsulated queries):**
 
 ```typescript
 // Custom repository with encapsulated queries
@@ -695,13 +505,6 @@ export class UsersRepository {
     return this.repo.findOne({ where: { email } });
   }
 
-  async findActive(): Promise<User[]> {
-    return this.repo.find({
-      where: { isActive: true, deletedAt: IsNull() },
-      order: { createdAt: 'DESC' },
-    });
-  }
-
   async findActiveWithMinOrders(minOrders: number): Promise<User[]> {
     return this.repo
       .createQueryBuilder('user')
@@ -714,20 +517,8 @@ export class UsersRepository {
       .getMany();
   }
 
-  async findByEmailDomain(domain: string): Promise<User[]> {
-    return this.repo
-      .createQueryBuilder('user')
-      .where('user.email LIKE :domain', { domain: `%@${domain}` })
-      .andWhere('user.verified = :verified', { verified: true })
-      .getMany();
-  }
-
   async save(user: User): Promise<User> {
     return this.repo.save(user);
-  }
-
-  async softDelete(id: string): Promise<void> {
-    await this.repo.update(id, { deletedAt: new Date() });
   }
 }
 
@@ -749,93 +540,12 @@ export class UsersService {
     const user = new User();
     user.email = dto.email;
     user.name = dto.name;
-    // Business logic only, no query details
-
     return this.usersRepo.save(user);
   }
 }
-
-// Register repository as provider
-@Module({
-  imports: [TypeOrmModule.forFeature([User])],
-  providers: [UsersRepository, UsersService],
-  exports: [UsersService, UsersRepository],
-})
-export class UsersModule {}
 ```
 
-## Repository Interface for Testing
-
-```typescript
-// Define interface for dependency injection
-export interface IUsersRepository {
-  findById(id: string): Promise<User | null>;
-  findByEmail(email: string): Promise<User | null>;
-  findActive(): Promise<User[]>;
-  save(user: User): Promise<User>;
-}
-
-export const USERS_REPOSITORY = Symbol('USERS_REPOSITORY');
-
-// Implementation
-@Injectable()
-export class UsersRepository implements IUsersRepository {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
-  // ... implementations
-}
-
-// Service uses interface
-@Injectable()
-export class UsersService {
-  constructor(
-    @Inject(USERS_REPOSITORY) private usersRepo: IUsersRepository,
-  ) {}
-}
-
-// Easy to mock in tests
-describe('UsersService', () => {
-  let service: UsersService;
-  let mockRepo: jest.Mocked<IUsersRepository>;
-
-  beforeEach(async () => {
-    mockRepo = {
-      findById: jest.fn(),
-      findByEmail: jest.fn(),
-      findActive: jest.fn(),
-      save: jest.fn(),
-    };
-
-    const module = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: USERS_REPOSITORY, useValue: mockRepo },
-      ],
-    }).compile();
-
-    service = module.get(UsersService);
-  });
-
-  it('should throw on duplicate email', async () => {
-    mockRepo.findByEmail.mockResolvedValue({ id: '1', email: 'test@test.com' } as User);
-
-    await expect(
-      service.create({ email: 'test@test.com', name: 'Test' }),
-    ).rejects.toThrow(ConflictException);
-  });
-});
-```
-
-## Why This Matters
-
-- **Testability**: Mock repositories without database setup
-- **Maintainability**: Query changes don't affect business logic
-- **Reusability**: Share query logic across services
-- **Clarity**: Services focus on business rules, repos on data access
-
-## Reference
-
-- [TypeORM Custom Repositories](https://typeorm.io/custom-repository)
-- [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html)
+Reference: [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html)
 
 ---
 
@@ -845,16 +555,14 @@ describe('UsersService', () => {
 
 ### 2.1 Avoid Service Locator Anti-Pattern
 
-**Impact: HIGH** - Service locator hides dependencies and breaks testability
-
-## Explanation
+**Impact: HIGH** - Hides dependencies and breaks testability
 
 Avoid using `ModuleRef.get()` or global containers to resolve dependencies at runtime. This hides dependencies, makes code harder to test, and breaks the benefits of dependency injection. Use constructor injection instead.
 
-## Incorrect
+**Incorrect (service locator anti-pattern):**
 
 ```typescript
-// DON'T: Use ModuleRef to get dependencies dynamically
+// Use ModuleRef to get dependencies dynamically
 @Injectable()
 export class OrdersService {
   constructor(private moduleRef: ModuleRef) {}
@@ -870,7 +578,7 @@ export class OrdersService {
   }
 }
 
-// DON'T: Global singleton container
+// Global singleton container
 class ServiceContainer {
   private static instance: ServiceContainer;
   private services = new Map<string, any>();
@@ -886,18 +594,9 @@ class ServiceContainer {
     return this.services.get(key);
   }
 }
-
-// Usage - completely hides dependencies
-@Injectable()
-export class BadService {
-  doSomething(): void {
-    const userService = ServiceContainer.getInstance().get<UsersService>('users');
-    // Invisible dependency, untestable
-  }
-}
 ```
 
-## Correct
+**Correct (constructor injection with explicit dependencies):**
 
 ```typescript
 // Use constructor injection - dependencies are explicit
@@ -933,17 +632,12 @@ describe('OrdersService', () => {
     service = module.get(OrdersService);
   });
 });
-```
 
-## Valid Uses of ModuleRef
-
-```typescript
 // VALID: Factory pattern for dynamic instantiation
 @Injectable()
 export class HandlerFactory {
   constructor(private moduleRef: ModuleRef) {}
 
-  // Create handler based on runtime type
   getHandler(type: string): Handler {
     switch (type) {
       case 'email':
@@ -955,102 +649,19 @@ export class HandlerFactory {
     }
   }
 }
-
-// VALID: Resolving request-scoped providers
-@Injectable()
-export class RequestScopedFactory {
-  constructor(private moduleRef: ModuleRef) {}
-
-  async getRequestScopedService(): Promise<RequestService> {
-    // contextId needed for request-scoped providers
-    return this.moduleRef.resolve(RequestService, ContextIdFactory.create());
-  }
-}
-
-// VALID: Lazy loading modules
-@Injectable()
-export class LazyService {
-  constructor(private lazyModuleLoader: LazyModuleLoader) {}
-
-  async loadModule(): Promise<void> {
-    const { HeavyModule } = await import('./heavy.module');
-    const moduleRef = await this.lazyModuleLoader.load(() => HeavyModule);
-    // ModuleRef.get() is acceptable after lazy loading
-    const service = moduleRef.get(HeavyService);
-  }
-}
 ```
 
-## Alternative: Strategy Pattern
-
-```typescript
-// Instead of service locator, use strategy pattern
-interface PaymentStrategy {
-  process(amount: number): Promise<PaymentResult>;
-}
-
-@Injectable()
-export class StripePayment implements PaymentStrategy {
-  async process(amount: number): Promise<PaymentResult> {
-    // Stripe implementation
-  }
-}
-
-@Injectable()
-export class PayPalPayment implements PaymentStrategy {
-  async process(amount: number): Promise<PaymentResult> {
-    // PayPal implementation
-  }
-}
-
-// Inject all strategies
-@Injectable()
-export class PaymentService {
-  private strategies: Map<string, PaymentStrategy>;
-
-  constructor(
-    stripe: StripePayment,
-    paypal: PayPalPayment,
-  ) {
-    this.strategies = new Map([
-      ['stripe', stripe],
-      ['paypal', paypal],
-    ]);
-  }
-
-  async processPayment(method: string, amount: number): Promise<PaymentResult> {
-    const strategy = this.strategies.get(method);
-    if (!strategy) {
-      throw new BadRequestException(`Unknown payment method: ${method}`);
-    }
-    return strategy.process(amount);
-  }
-}
-```
-
-## Why This Matters
-
-- **Explicit dependencies**: Constructor shows what a class needs
-- **Testability**: Easy to mock dependencies in tests
-- **Compile-time errors**: Missing deps caught at startup
-- **Maintainability**: Clear dependency graph
-
-## Reference
-
-- [Service Locator Anti-Pattern](https://blog.ploeh.dk/2010/02/03/ServiceLocatorisanAnti-Pattern/)
-- [NestJS Module Reference](https://docs.nestjs.com/fundamentals/module-ref)
+Reference: [NestJS Module Reference](https://docs.nestjs.com/fundamentals/module-ref)
 
 ---
 
 ### 2.2 Prefer Constructor Injection
 
-**Impact: CRITICAL** - Required for proper DI, testing, and TypeScript support
+**Impact: CRITICAL** - Required for proper DI and testing
 
-## Explanation
+Always use constructor injection over property injection. Constructor injection makes dependencies explicit, enables TypeScript type checking, ensures dependencies are available when the class is instantiated, and improves testability. This is required for proper DI, testing, and TypeScript support.
 
-Always use constructor injection over property injection. Constructor injection makes dependencies explicit, enables TypeScript type checking, ensures dependencies are available when the class is instantiated, and improves testability.
-
-## Incorrect
+**Incorrect (property injection with hidden dependencies):**
 
 ```typescript
 // Property injection - avoid unless necessary
@@ -1073,7 +684,7 @@ export class UsersService {
 // 3. TypeScript can't enforce dependency types at instantiation
 ```
 
-## Correct
+**Correct (constructor injection with explicit dependencies):**
 
 ```typescript
 // Constructor injection - explicit and testable
@@ -1109,13 +720,8 @@ describe('UsersService', () => {
     expect(result).toHaveLength(1);
   });
 });
-```
 
-## When Property Injection is Acceptable
-
-```typescript
 // Only use property injection for optional dependencies
-// or to break circular dependencies (rare)
 @Injectable()
 export class LoggingService {
   @Optional()
@@ -1129,33 +735,20 @@ export class LoggingService {
 }
 ```
 
-## Why This Matters
-
-- **Explicit dependencies**: Constructor shows all requirements
-- **Type safety**: TypeScript validates dependencies at compile time
-- **Testability**: Easy to provide mocks in unit tests
-- **Immutability**: `readonly` prevents accidental reassignment
-- **Initialization order**: Dependencies guaranteed available
-
-## Reference
-
-- [NestJS Providers](https://docs.nestjs.com/providers)
-- [Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
+Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ---
 
 ### 2.3 Understand Provider Scopes
 
-**Impact: CRITICAL** - Prevents memory leaks and incorrect data sharing
+**Impact: CRITICAL** - Prevents data leaks and performance issues
 
-## Explanation
+NestJS has three provider scopes: DEFAULT (singleton), REQUEST (per-request instance), and TRANSIENT (new instance for each injection). Most providers should be singletons. Request-scoped providers have performance implications as they bubble up through the dependency tree. Understanding scopes prevents memory leaks and incorrect data sharing.
 
-NestJS has three provider scopes: DEFAULT (singleton), REQUEST (per-request instance), and TRANSIENT (new instance for each injection). Most providers should be singletons. Request-scoped providers have performance implications as they bubble up through the dependency tree.
-
-## Incorrect
+**Incorrect (wrong scope usage):**
 
 ```typescript
-// DON'T: Request-scoped when not needed (performance hit)
+// Request-scoped when not needed (performance hit)
 @Injectable({ scope: Scope.REQUEST })
 export class UsersService {
   // This creates a new instance for EVERY request
@@ -1165,7 +758,7 @@ export class UsersService {
   }
 }
 
-// DON'T: Singleton with mutable request state
+// Singleton with mutable request state
 @Injectable() // Default: singleton
 export class RequestContextService {
   private userId: string; // DANGER: Shared across all requests!
@@ -1180,7 +773,7 @@ export class RequestContextService {
 }
 ```
 
-## Correct
+**Correct (appropriate scope for each use case):**
 
 ```typescript
 // Singleton for stateless services (default, most common)
@@ -1234,55 +827,20 @@ export class AuditService {
 }
 ```
 
-## Scope Implications
-
-```typescript
-// When a service is REQUEST-scoped, all its dependents become request-scoped too
-@Injectable({ scope: Scope.REQUEST })
-export class RequestScopedService {}
-
-@Injectable() // This becomes effectively request-scoped!
-export class ConsumerService {
-  constructor(private requestScoped: RequestScopedService) {}
-}
-
-// TRANSIENT: New instance per injection point
-@Injectable({ scope: Scope.TRANSIENT })
-export class LoggerService {
-  constructor() {
-    this.instanceId = crypto.randomUUID();
-  }
-
-  // Each service gets its own logger instance
-}
-```
-
-## Why This Matters
-
-- **Data leaks**: Singleton state shared between requests causes security issues
-- **Performance**: Request-scoped services add overhead (new instances per request)
-- **Memory**: TRANSIENT without cleanup causes memory leaks
-- **Debugging**: Wrong scope causes intermittent, hard-to-reproduce bugs
-
-## Reference
-
-- [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/injection-scopes)
-- [nestjs-cls for Async Context](https://github.com/Papooch/nestjs-cls)
+Reference: [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/injection-scopes)
 
 ---
 
 ### 2.4 Use Injection Tokens for Interfaces
 
-**Impact: HIGH** - Enables proper abstraction and testability
-
-## Explanation
+**Impact: HIGH** - Enables interface-based DI at runtime
 
 TypeScript interfaces are erased at compile time and can't be used as injection tokens. Use string tokens, symbols, or abstract classes when you want to inject implementations of interfaces. This enables swapping implementations for testing or different environments.
 
-## Incorrect
+**Incorrect (interface can't be used as token):**
 
 ```typescript
-// DON'T: Interface can't be used as injection token
+// Interface can't be used as injection token
 interface PaymentGateway {
   charge(amount: number): Promise<PaymentResult>;
 }
@@ -1299,7 +857,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (symbol tokens or abstract classes):**
 
 ```typescript
 // Option 1: String/Symbol tokens (most flexible)
@@ -1361,16 +919,6 @@ export class StripeService extends PaymentGateway {
   }
 }
 
-@Module({
-  providers: [
-    {
-      provide: PaymentGateway,
-      useClass: StripeService,
-    },
-  ],
-})
-export class PaymentModule {}
-
 // No @Inject needed with abstract class
 @Injectable()
 export class OrdersService {
@@ -1378,49 +926,7 @@ export class OrdersService {
 }
 ```
 
-## Testing Benefits
-
-```typescript
-describe('OrdersService', () => {
-  let service: OrdersService;
-  let mockPayment: jest.Mocked<PaymentGateway>;
-
-  beforeEach(async () => {
-    mockPayment = {
-      charge: jest.fn().mockResolvedValue({ success: true }),
-    };
-
-    const module = await Test.createTestingModule({
-      providers: [
-        OrdersService,
-        {
-          provide: PAYMENT_GATEWAY,
-          useValue: mockPayment,
-        },
-      ],
-    }).compile();
-
-    service = module.get(OrdersService);
-  });
-
-  it('should charge payment', async () => {
-    await service.createOrder({ amount: 100 });
-    expect(mockPayment.charge).toHaveBeenCalledWith(100);
-  });
-});
-```
-
-## Why This Matters
-
-- **Abstraction**: Code depends on interface, not implementation
-- **Testability**: Easy to swap real services for mocks
-- **Flexibility**: Change implementations without changing consumers
-- **Runtime safety**: Tokens ensure DI works correctly
-
-## Reference
-
-- [NestJS Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
-- [Injection Tokens](https://docs.nestjs.com/fundamentals/custom-providers#non-class-based-provider-tokens)
+Reference: [NestJS Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
 
 ---
 
@@ -1430,16 +936,14 @@ describe('OrdersService', () => {
 
 ### 3.1 Handle Async Errors Properly
 
-**Impact: HIGH** - Unhandled async errors crash the application
-
-## Explanation
+**Impact: HIGH** - Prevents process crashes from unhandled rejections
 
 NestJS automatically catches errors from async route handlers, but errors from background tasks, event handlers, and manually created promises can crash your application. Always handle async errors explicitly and use global handlers as a safety net.
 
-## Incorrect
+**Incorrect (fire-and-forget without error handling):**
 
 ```typescript
-// DON'T: Fire-and-forget without error handling
+// Fire-and-forget without error handling
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -1452,7 +956,7 @@ export class UsersService {
   }
 }
 
-// DON'T: Unhandled promise in event handler
+// Unhandled promise in event handler
 @Injectable()
 export class OrdersService {
   @OnEvent('order.created')
@@ -1468,7 +972,7 @@ export class OrdersService {
   }
 }
 
-// DON'T: Missing try-catch in scheduled tasks
+// Missing try-catch in scheduled tasks
 @Cron('0 0 * * *')
 async dailyCleanup(): Promise<void> {
   await this.cleanupService.run();
@@ -1476,7 +980,7 @@ async dailyCleanup(): Promise<void> {
 }
 ```
 
-## Correct
+**Correct (explicit async error handling):**
 
 ```typescript
 // Handle fire-and-forget with explicit catch
@@ -1530,28 +1034,18 @@ export class CleanupService {
     }
   }
 }
-```
 
-## Global Unhandled Rejection Handler
-
-```typescript
-// main.ts - Safety net for uncaught errors
+// Global unhandled rejection handler in main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // In production, you might want to:
-    // - Send to error tracking service
-    // - Gracefully shutdown
   });
 
-  // Handle uncaught exceptions
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error);
-    // Graceful shutdown recommended after uncaught exception
     process.exit(1);
   });
 
@@ -1559,101 +1053,20 @@ async function bootstrap() {
 }
 ```
 
-## RxJS Observable Error Handling
-
-```typescript
-// Handle errors in Observable streams
-@Injectable()
-export class StreamService {
-  private readonly logger = new Logger(StreamService.name);
-
-  processStream(data$: Observable<Data>): Observable<Result> {
-    return data$.pipe(
-      mergeMap((data) => this.process(data)),
-      catchError((error) => {
-        this.logger.error('Stream processing error', error);
-        // Return empty to continue stream, or rethrow
-        return EMPTY;
-      }),
-      retry({
-        count: 3,
-        delay: (error, retryCount) => {
-          this.logger.warn(`Retry attempt ${retryCount}`);
-          return timer(1000 * retryCount);
-        },
-      }),
-    );
-  }
-}
-
-// Microservice message handling
-@MessagePattern({ cmd: 'process' })
-async processMessage(data: ProcessDto): Promise<Result> {
-  try {
-    return await this.service.process(data);
-  } catch (error) {
-    // Transform to RpcException for proper client handling
-    throw new RpcException({
-      code: 'PROCESSING_ERROR',
-      message: error.message,
-    });
-  }
-}
-```
-
-## Async Context Preservation
-
-```typescript
-// Preserve context in async operations
-@Injectable()
-export class TrackedService {
-  constructor(private cls: ClsService) {}
-
-  async processWithTracking(data: Data): Promise<void> {
-    const requestId = this.cls.get('requestId');
-
-    // Background task with context
-    setImmediate(async () => {
-      try {
-        await this.backgroundProcess(data);
-      } catch (error) {
-        // Log with original request context
-        this.logger.error('Background task failed', {
-          requestId,
-          error: error.message,
-        });
-      }
-    });
-  }
-}
-```
-
-## Why This Matters
-
-- **Stability**: Unhandled rejections crash Node.js (Node 15+)
-- **Debugging**: Proper error handling preserves stack traces
-- **Reliability**: Prevents silent failures in background tasks
-- **Monitoring**: Enables proper error tracking and alerting
-
-## Reference
-
-- [Node.js Unhandled Rejections](https://nodejs.org/api/process.html#event-unhandledrejection)
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
+Reference: [Node.js Unhandled Rejections](https://nodejs.org/api/process.html#event-unhandledrejection)
 
 ---
 
 ### 3.2 Throw HTTP Exceptions from Services
 
-**Impact: HIGH** - Clean separation between business logic and HTTP concerns
-
-## Explanation
+**Impact: HIGH** - Keeps controllers thin and simplifies error handling
 
 It's acceptable (and often preferable) to throw `HttpException` subclasses from services in HTTP applications. This keeps controllers thin and allows services to communicate appropriate error states. For truly layer-agnostic services, use domain exceptions that map to HTTP status codes.
 
-## Incorrect
+**Incorrect (return error objects instead of throwing):**
 
 ```typescript
-// DON'T: Return error objects instead of throwing
+// Return error objects instead of throwing
 @Injectable()
 export class UsersService {
   async findById(id: string): Promise<{ user?: User; error?: string }> {
@@ -1678,10 +1091,10 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (throw exceptions directly from service):**
 
 ```typescript
-// DO: Throw exceptions directly from service
+// Throw exceptions directly from service
 @Injectable()
 export class UsersService {
   constructor(private readonly repo: UserRepository) {}
@@ -1752,54 +1165,20 @@ export class EntityNotFoundFilter implements ExceptionFilter {
 }
 ```
 
-## Built-in HTTP Exceptions
-
-```typescript
-// Use the appropriate built-in exception
-throw new BadRequestException('Invalid input');      // 400
-throw new UnauthorizedException('Not authenticated'); // 401
-throw new ForbiddenException('Access denied');       // 403
-throw new NotFoundException('Resource not found');   // 404
-throw new ConflictException('Resource exists');      // 409
-throw new UnprocessableEntityException('Invalid');   // 422
-throw new InternalServerErrorException('Error');     // 500
-
-// With detailed error object
-throw new BadRequestException({
-  message: 'Validation failed',
-  errors: [
-    { field: 'email', message: 'Invalid email format' },
-    { field: 'age', message: 'Must be positive' },
-  ],
-});
-```
-
-## Why This Matters
-
-- **Thin controllers**: Controllers only route requests
-- **Cleaner code**: No error checking boilerplate
-- **Predictable flow**: Exceptions bubble up automatically
-- **Testability**: Services can be tested for exception throwing
-
-## Reference
-
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
-- [Built-in HTTP Exceptions](https://docs.nestjs.com/exception-filters#built-in-http-exceptions)
+Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
 
 ---
 
 ### 3.3 Use Exception Filters for Error Handling
 
-**Impact: HIGH** - Consistent error responses and centralized error logic
-
-## Explanation
+**Impact: HIGH** - Consistent, centralized error handling
 
 Never catch exceptions and manually format error responses in controllers. Use NestJS exception filters to handle errors consistently across your application. Create custom exception filters for specific error types and a global filter for unhandled exceptions.
 
-## Incorrect
+**Incorrect (manual error handling in controllers):**
 
 ```typescript
-// DON'T: Manual error handling in controllers
+// Manual error handling in controllers
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -1824,10 +1203,10 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (exception filters with consistent handling):**
 
 ```typescript
-// DO: Use built-in and custom exceptions
+// Use built-in and custom exceptions
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -1924,18 +1303,7 @@ app.useGlobalFilters(
 export class AppModule {}
 ```
 
-## Why This Matters
-
-- **Consistency**: All errors follow the same response format
-- **Separation of concerns**: Controllers focus on business logic
-- **Logging**: Centralized error logging and monitoring
-- **Security**: Prevents leaking stack traces to clients
-- **Testability**: Exception behavior is predictable and testable
-
-## Reference
-
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
-- [Built-in HTTP Exceptions](https://docs.nestjs.com/exception-filters#built-in-http-exceptions)
+Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
 
 ---
 
@@ -1945,16 +1313,14 @@ export class AppModule {}
 
 ### 4.1 Implement Secure JWT Authentication
 
-**Impact: CRITICAL** - Insecure auth implementation leads to unauthorized access
-
-## Explanation
+**Impact: CRITICAL** - Essential for secure APIs
 
 Use `@nestjs/jwt` with `@nestjs/passport` for authentication. Store secrets securely, use appropriate token lifetimes, implement refresh tokens, and validate tokens properly. Never expose sensitive data in JWT payloads.
 
-## Incorrect
+**Incorrect (insecure JWT implementation):**
 
 ```typescript
-// DON'T: Hardcode secrets
+// Hardcode secrets
 @Module({
   imports: [
     JwtModule.register({
@@ -1965,7 +1331,7 @@ Use `@nestjs/jwt` with `@nestjs/passport` for authentication. Store secrets secu
 })
 export class AuthModule {}
 
-// DON'T: Store sensitive data in JWT
+// Store sensitive data in JWT
 async login(user: User): Promise<{ accessToken: string }> {
   const payload = {
     sub: user.id,
@@ -1977,14 +1343,13 @@ async login(user: User): Promise<{ accessToken: string }> {
   return { accessToken: this.jwtService.sign(payload) };
 }
 
-// DON'T: Skip token validation
+// Skip token validation
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: 'my-secret',
-      // ignoreExpiration: true, // NEVER ignore expiration!
     });
   }
 
@@ -1994,7 +1359,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-## Correct
+**Correct (secure JWT with refresh tokens):**
 
 ```typescript
 // Secure JWT configuration
@@ -2086,106 +1451,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-## Refresh Token Flow
-
-```typescript
-@Controller('auth')
-export class AuthController {
-  @Post('refresh')
-  async refresh(@Body() dto: RefreshTokenDto): Promise<TokenResponse> {
-    // Find stored refresh token
-    const storedToken = await this.refreshTokenRepo.findOne({
-      where: { userId: dto.userId },
-    });
-
-    if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    // Verify token matches
-    const isValid = await bcrypt.compare(dto.refreshToken, storedToken.token);
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    // Generate new tokens (rotate refresh token)
-    const user = await this.usersService.findById(dto.userId);
-    await this.refreshTokenRepo.delete({ userId: dto.userId });
-
-    return this.authService.login(user);
-  }
-
-  @Post('logout')
-  @UseGuards(JwtAuthGuard)
-  async logout(@CurrentUser() user: User): Promise<void> {
-    // Invalidate refresh token
-    await this.refreshTokenRepo.delete({ userId: user.id });
-  }
-}
-```
-
-## Token Blacklisting
-
-```typescript
-// For immediate token invalidation
-@Injectable()
-export class TokenBlacklistService {
-  constructor(@InjectRedis() private redis: Redis) {}
-
-  async blacklist(token: string, expiresIn: number): Promise<void> {
-    const decoded = this.jwtService.decode(token) as JwtPayload;
-    const key = `blacklist:${decoded.jti || token}`;
-
-    await this.redis.setex(key, expiresIn, '1');
-  }
-
-  async isBlacklisted(token: string): Promise<boolean> {
-    const decoded = this.jwtService.decode(token) as JwtPayload;
-    const key = `blacklist:${decoded.jti || token}`;
-
-    return (await this.redis.exists(key)) === 1;
-  }
-}
-
-// Check blacklist in strategy
-async validate(payload: JwtPayload, done: Function): Promise<void> {
-  const token = this.request.headers.authorization?.split(' ')[1];
-
-  if (await this.blacklistService.isBlacklisted(token)) {
-    throw new UnauthorizedException('Token has been revoked');
-  }
-
-  const user = await this.usersService.findById(payload.sub);
-  done(null, user);
-}
-```
-
-## Why This Matters
-
-- **Unauthorized access**: Weak auth exposes all protected resources
-- **Token theft**: Long-lived tokens increase risk window
-- **Data exposure**: Sensitive data in JWT is visible to anyone
-- **Compliance**: OWASP requires proper authentication
-
-## Reference
-
-- [NestJS Authentication](https://docs.nestjs.com/security/authentication)
-- [JWT Best Practices](https://auth0.com/blog/a-look-at-the-latest-draft-for-jwt-bcp/)
+Reference: [NestJS Authentication](https://docs.nestjs.com/security/authentication)
 
 ---
 
 ### 4.2 Implement Rate Limiting
 
-**Impact: HIGH** - Prevents abuse, DoS attacks, and resource exhaustion
-
-## Explanation
+**Impact: HIGH** - Protects against abuse and ensures fair resource usage
 
 Use `@nestjs/throttler` to limit request rates per client. Apply different limits for different endpoints - stricter for auth endpoints, more relaxed for read operations. Consider using Redis for distributed rate limiting in clustered deployments.
 
-## Incorrect
+**Incorrect (no rate limiting on sensitive endpoints):**
 
 ```typescript
-// DON'T: No rate limiting on sensitive endpoints
+// No rate limiting on sensitive endpoints
 @Controller('auth')
 export class AuthController {
   @Post('login')
@@ -2201,7 +1480,7 @@ export class AuthController {
   }
 }
 
-// DON'T: Same limits for all endpoints
+// Same limits for all endpoints
 @UseGuards(ThrottlerGuard)
 @Controller('api')
 export class ApiController {
@@ -2213,7 +1492,7 @@ export class ApiController {
 }
 ```
 
-## Correct
+**Correct (configured throttler with endpoint-specific limits):**
 
 ```typescript
 // Configure throttler globally with multiple limits
@@ -2275,50 +1554,6 @@ export class HealthController {
 }
 
 // Custom throttle per user type
-@Controller('api')
-export class ApiController {
-  @Get('data')
-  @SkipThrottle({ short: true }) // Skip short limit, keep others
-  async getData() {
-    return this.service.getData();
-  }
-}
-```
-
-## Redis-Based Distributed Rate Limiting
-
-```typescript
-// Use Redis for clustered deployments
-import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import Redis from 'ioredis';
-
-@Module({
-  imports: [
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        throttlers: [
-          { name: 'short', ttl: 1000, limit: 3 },
-          { name: 'long', ttl: 60000, limit: 100 },
-        ],
-        storage: new ThrottlerStorageRedisService(
-          new Redis({
-            host: config.get('REDIS_HOST'),
-            port: config.get('REDIS_PORT'),
-          }),
-        ),
-      }),
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Custom Rate Limit by User
-
-```typescript
-// Different limits for authenticated vs anonymous
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
@@ -2337,64 +1572,22 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     return 50; // Anonymous users
   }
 }
-
-// Rate limit by API key
-@Injectable()
-export class ApiKeyThrottlerGuard extends ThrottlerGuard {
-  constructor(
-    private apiKeyService: ApiKeyService,
-    options: ThrottlerModuleOptions,
-    storageService: ThrottlerStorage,
-    reflector: Reflector,
-  ) {
-    super(options, storageService, reflector);
-  }
-
-  protected async getTracker(req: Request): Promise<string> {
-    const apiKey = req.headers['x-api-key'] as string;
-    return apiKey || req.ip;
-  }
-
-  protected async getLimit(context: ExecutionContext): Promise<number> {
-    const request = context.switchToHttp().getRequest();
-    const apiKey = request.headers['x-api-key'];
-
-    if (apiKey) {
-      const keyConfig = await this.apiKeyService.getConfig(apiKey);
-      return keyConfig?.rateLimit || 100;
-    }
-
-    return 10; // No API key
-  }
-}
 ```
 
-## Why This Matters
-
-- **DoS prevention**: Stops resource exhaustion attacks
-- **Brute force protection**: Limits credential guessing
-- **Fair usage**: Ensures resources for all users
-- **Cost control**: Prevents unexpected infrastructure costs
-
-## Reference
-
-- [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)
-- [@nestjs/throttler](https://github.com/nestjs/throttler)
+Reference: [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)
 
 ---
 
 ### 4.3 Sanitize Output to Prevent XSS
 
-**Impact: HIGH** - Prevents cross-site scripting attacks in rendered content
-
-## Explanation
+**Impact: HIGH** - XSS vulnerabilities can compromise user sessions and data
 
 While NestJS APIs typically return JSON (which browsers don't execute), XSS risks exist when rendering HTML, storing user content, or when frontend frameworks improperly handle API responses. Sanitize user-generated content before storage and use proper Content-Type headers.
 
-## Incorrect
+**Incorrect (storing raw HTML without sanitization):**
 
 ```typescript
-// DON'T: Store raw HTML from users
+// Store raw HTML from users
 @Injectable()
 export class CommentsService {
   async create(dto: CreateCommentDto): Promise<Comment> {
@@ -2406,7 +1599,7 @@ export class CommentsService {
   }
 }
 
-// DON'T: Return HTML without sanitization
+// Return HTML without sanitization
 @Controller('pages')
 export class PagesController {
   @Get(':slug')
@@ -2418,7 +1611,7 @@ export class PagesController {
   }
 }
 
-// DON'T: Reflect user input in errors
+// Reflect user input in errors
 @Get(':id')
 async findOne(@Param('id') id: string): Promise<User> {
   const user = await this.repo.findOne({ where: { id } });
@@ -2430,7 +1623,7 @@ async findOne(@Param('id') id: string): Promise<User> {
 }
 ```
 
-## Correct
+**Correct (sanitize content and use proper headers):**
 
 ```typescript
 // Sanitize HTML content before storage
@@ -2494,11 +1687,7 @@ async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<User> {
   }
   return user;
 }
-```
 
-## Content Security Policy
-
-```typescript
 // Use Helmet for CSP headers
 import helmet from 'helmet';
 
@@ -2513,10 +1702,6 @@ async function bootstrap() {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'"],
-          fontSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          frameSrc: ["'none'"],
         },
       },
     }),
@@ -2524,62 +1709,22 @@ async function bootstrap() {
 
   await app.listen(3000);
 }
-
-// Add X-Content-Type-Options
-app.use(helmet.noSniff());
-
-// Prevent clickjacking
-app.use(helmet.frameguard({ action: 'deny' }));
 ```
 
-## Markdown Sanitization
-
-```typescript
-// Safe markdown rendering
-import * as marked from 'marked';
-import * as DOMPurify from 'isomorphic-dompurify';
-
-@Injectable()
-export class MarkdownService {
-  render(markdown: string): string {
-    // First render markdown
-    const html = marked.parse(markdown);
-
-    // Then sanitize the output
-    return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'blockquote'],
-      ALLOWED_ATTR: ['href', 'title', 'class'],
-    });
-  }
-}
-```
-
-## Why This Matters
-
-- **Session hijacking**: XSS can steal auth tokens
-- **Data theft**: Attackers can read sensitive page content
-- **Defacement**: Malicious content injected into pages
-- **Malware distribution**: Redirect users to malicious sites
-
-## Reference
-
-- [OWASP XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
-- [sanitize-html](https://www.npmjs.com/package/sanitize-html)
+Reference: [OWASP XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
 
 ---
 
 ### 4.4 Use Guards for Authentication and Authorization
 
-**Impact: HIGH** - Centralized access control prevents security gaps
-
-## Explanation
+**Impact: HIGH** - Enforces access control before handlers execute
 
 Guards determine whether a request should be handled based on authentication state, roles, permissions, or other conditions. They run after middleware but before pipes and interceptors, making them ideal for access control. Use guards instead of manual checks in controllers.
 
-## Incorrect
+**Incorrect (manual auth checks in every handler):**
 
 ```typescript
-// DON'T: Manual auth checks in every handler
+// Manual auth checks in every handler
 @Controller('admin')
 export class AdminController {
   @Get('users')
@@ -2606,7 +1751,7 @@ export class AdminController {
 }
 ```
 
-## Correct
+**Correct (guards with declarative decorators):**
 
 ```typescript
 // JWT Auth Guard
@@ -2699,65 +1844,20 @@ export class AdminController {
 }
 ```
 
-## Policy-Based Authorization (CASL)
-
-```typescript
-// For complex permissions, use CASL
-@Injectable()
-export class PoliciesGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    private caslAbilityFactory: CaslAbilityFactory,
-  ) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const policies = this.reflector.get<PolicyHandler[]>(
-      'check_policies',
-      context.getHandler(),
-    );
-    if (!policies) return true;
-
-    const { user } = context.switchToHttp().getRequest();
-    const ability = this.caslAbilityFactory.createForUser(user);
-
-    return policies.every((policy) => policy(ability));
-  }
-}
-
-// Usage
-@Get(':id')
-@CheckPolicies((ability) => ability.can(Action.Read, Article))
-async findOne(@Param('id') id: string) {
-  return this.articlesService.findOne(id);
-}
-```
-
-## Why This Matters
-
-- **DRY**: Auth logic defined once, applied everywhere
-- **Security**: Guarantees checks run before business logic
-- **Composability**: Combine multiple guards for complex rules
-- **Clarity**: Controllers focus on business logic
-
-## Reference
-
-- [NestJS Guards](https://docs.nestjs.com/guards)
-- [CASL Integration](https://docs.nestjs.com/security/authorization#integrating-casl)
+Reference: [NestJS Guards](https://docs.nestjs.com/guards)
 
 ---
 
 ### 4.5 Validate All Input with DTOs and Pipes
 
-**Impact: HIGH** - Prevents injection attacks and data corruption
-
-## Explanation
+**Impact: HIGH** - First line of defense against attacks
 
 Always validate incoming data using class-validator decorators on DTOs and the global ValidationPipe. Never trust user input. Validate all request bodies, query parameters, and route parameters before processing.
 
-## Incorrect
+**Incorrect (trust raw input without validation):**
 
 ```typescript
-// DON'T: Trust raw input without validation
+// Trust raw input without validation
 @Controller('users')
 export class UsersController {
   @Post()
@@ -2773,7 +1873,7 @@ export class UsersController {
   }
 }
 
-// DON'T: DTOs without validation decorators
+// DTOs without validation decorators
 export class CreateUserDto {
   name: string;    // No validation
   email: string;   // Could be "not-an-email"
@@ -2781,7 +1881,7 @@ export class CreateUserDto {
 }
 ```
 
-## Correct
+**Correct (validated DTOs with global ValidationPipe):**
 
 ```typescript
 // Enable ValidationPipe globally in main.ts
@@ -2892,48 +1992,7 @@ export class UsersController {
 }
 ```
 
-## Custom Validators
-
-```typescript
-// Custom decorator for complex validation
-import { registerDecorator, ValidationOptions } from 'class-validator';
-
-export function IsStrongPassword(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
-    registerDecorator({
-      name: 'isStrongPassword',
-      target: object.constructor,
-      propertyName: propertyName,
-      options: validationOptions,
-      validator: {
-        validate(value: any) {
-          const hasUppercase = /[A-Z]/.test(value);
-          const hasLowercase = /[a-z]/.test(value);
-          const hasNumber = /\d/.test(value);
-          const hasSpecial = /[!@#$%^&*]/.test(value);
-          return hasUppercase && hasLowercase && hasNumber && hasSpecial;
-        },
-        defaultMessage() {
-          return 'Password must contain uppercase, lowercase, number, and special character';
-        },
-      },
-    });
-  };
-}
-```
-
-## Why This Matters
-
-- **Security**: Prevents SQL injection, XSS, and other injection attacks
-- **Data integrity**: Ensures data meets business requirements
-- **Type safety**: Transforms strings to proper types
-- **Clear contracts**: DTOs document expected input format
-
-## Reference
-
-- [NestJS Validation](https://docs.nestjs.com/techniques/validation)
-- [class-validator](https://github.com/typestack/class-validator)
-- [class-transformer](https://github.com/typestack/class-transformer)
+Reference: [NestJS Validation](https://docs.nestjs.com/techniques/validation)
 
 ---
 
@@ -2943,16 +2002,14 @@ export function IsStrongPassword(validationOptions?: ValidationOptions) {
 
 ### 5.1 Use Async Lifecycle Hooks Correctly
 
-**Impact: HIGH** - Prevents blocking and ensures proper initialization order
-
-## Explanation
+**Impact: HIGH** - Improper async handling blocks application startup
 
 NestJS lifecycle hooks (`onModuleInit`, `onApplicationBootstrap`, etc.) support async operations. However, misusing them can block application startup or cause race conditions. Understand the lifecycle order and use hooks appropriately.
 
-## Incorrect
+**Incorrect (fire-and-forget async without await):**
 
 ```typescript
-// DON'T: Fire-and-forget async without await
+// Fire-and-forget async without await
 @Injectable()
 export class DatabaseService implements OnModuleInit {
   onModuleInit() {
@@ -2966,7 +2023,7 @@ export class DatabaseService implements OnModuleInit {
   }
 }
 
-// DON'T: Heavy blocking operations in constructor
+// Heavy blocking operations in constructor
 @Injectable()
 export class ConfigService {
   private config: Config;
@@ -2978,10 +2035,10 @@ export class ConfigService {
 }
 ```
 
-## Correct
+**Correct (return promises from async hooks):**
 
 ```typescript
-// DO: Return promise from async hooks
+// Return promise from async hooks
 @Injectable()
 export class DatabaseService implements OnModuleInit {
   private pool: Pool;
@@ -2999,7 +2056,7 @@ export class DatabaseService implements OnModuleInit {
   }
 }
 
-// DO: Use onApplicationBootstrap for cross-module dependencies
+// Use onApplicationBootstrap for cross-module dependencies
 @Injectable()
 export class CacheWarmerService implements OnApplicationBootstrap {
   constructor(
@@ -3014,7 +2071,7 @@ export class CacheWarmerService implements OnApplicationBootstrap {
   }
 }
 
-// DO: Heavy init in async hooks, not constructor
+// Heavy init in async hooks, not constructor
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private config: Config;
@@ -3037,52 +2094,8 @@ export class ConfigService implements OnModuleInit {
     return this.config[key];
   }
 }
-```
 
-## Lifecycle Hook Order
-
-```typescript
-// Understanding the order prevents race conditions
-@Injectable()
-export class MyService implements
-  OnModuleInit,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-  BeforeApplicationShutdown {
-
-  // 1. Constructor - Sync only, dependencies injected
-  constructor(private dep: SomeDependency) {}
-
-  // 2. OnModuleInit - Called after module's providers are instantiated
-  // Dependencies in SAME module are available
-  async onModuleInit() {
-    console.log('Module init - can use same-module deps');
-  }
-
-  // 3. OnApplicationBootstrap - Called after ALL modules are initialized
-  // Safe to use cross-module dependencies
-  async onApplicationBootstrap() {
-    console.log('App bootstrap - all deps available');
-  }
-
-  // 4. BeforeApplicationShutdown - Called on SIGTERM/SIGINT
-  // HTTP server still running, can finish requests
-  async beforeApplicationShutdown(signal?: string) {
-    console.log('Shutdown signal:', signal);
-  }
-
-  // 5. OnModuleDestroy - Called after beforeApplicationShutdown
-  // Clean up resources
-  async onModuleDestroy() {
-    console.log('Destroying - cleanup time');
-  }
-}
-```
-
-## Enable Shutdown Hooks
-
-```typescript
-// main.ts - Required for shutdown hooks to work
+// Enable shutdown hooks in main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks(); // Enable SIGTERM/SIGINT handling
@@ -3090,32 +2103,20 @@ async function bootstrap() {
 }
 ```
 
-## Why This Matters
-
-- **Reliability**: Ensures services are ready before handling requests
-- **Clean shutdown**: Proper resource cleanup prevents data loss
-- **Performance**: Non-blocking startup improves boot time
-- **Debugging**: Predictable order simplifies troubleshooting
-
-## Reference
-
-- [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
-- [Application Shutdown](https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown)
+Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
 
 ---
 
 ### 5.2 Use Lazy Loading for Large Modules
 
-**Impact: MEDIUM** - Reduces startup time and memory usage for large applications
-
-## Explanation
+**Impact: MEDIUM** - Improves startup time for large applications
 
 NestJS supports lazy-loading modules, which defers initialization until first use. This is valuable for large applications where some features are rarely used, serverless deployments where cold start time matters, or when certain modules have heavy initialization costs.
 
-## Incorrect
+**Incorrect (loading everything eagerly):**
 
 ```typescript
-// DON'T: Load everything eagerly in a large app
+// Load everything eagerly in a large app
 @Module({
   imports: [
     UsersModule,
@@ -3135,7 +2136,7 @@ export class AppModule {}
 // Memory wasted on unused modules
 ```
 
-## Correct
+**Correct (lazy load rarely-used modules):**
 
 ```typescript
 // Use LazyModuleLoader for optional modules
@@ -3155,7 +2156,7 @@ export class ReportsService {
   }
 }
 
-// Lazy load admin features
+// Lazy load admin features with caching
 @Injectable()
 export class AdminService {
   private adminModule: ModuleRef | null = null;
@@ -3176,32 +2177,8 @@ export class AdminService {
     await taskRunner.run(task);
   }
 }
-```
 
-## Route-Based Lazy Loading
-
-```typescript
-// Lazy load based on route access
-@Controller('admin')
-export class AdminController {
-  private dashboardService: AdminDashboardService | null = null;
-
-  constructor(private lazyModuleLoader: LazyModuleLoader) {}
-
-  @Get('dashboard')
-  @UseGuards(AdminGuard)
-  async getDashboard(): Promise<DashboardData> {
-    if (!this.dashboardService) {
-      const { AdminModule } = await import('./admin/admin.module');
-      const moduleRef = await this.lazyModuleLoader.load(() => AdminModule);
-      this.dashboardService = moduleRef.get(AdminDashboardService);
-    }
-
-    return this.dashboardService.getDashboardData();
-  }
-}
-
-// Better: Use a lazy loader service
+// Reusable lazy loader service
 @Injectable()
 export class ModuleLoaderService {
   private loadedModules = new Map<string, ModuleRef>();
@@ -3222,35 +2199,14 @@ export class ModuleLoaderService {
   }
 }
 
-// Usage
-@Injectable()
-export class FeatureService {
-  constructor(private moduleLoader: ModuleLoaderService) {}
-
-  async useHeavyFeature(): Promise<void> {
-    const moduleRef = await this.moduleLoader.load(
-      'heavy-feature',
-      () => import('./heavy-feature/heavy-feature.module'),
-    );
-    const service = moduleRef.get(HeavyFeatureService);
-    await service.process();
-  }
-}
-```
-
-## Preloading Critical Paths
-
-```typescript
 // Preload modules in background after startup
 @Injectable()
 export class ModulePreloader implements OnApplicationBootstrap {
   constructor(private lazyModuleLoader: LazyModuleLoader) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    // App is running, now preload likely-to-be-used modules
     setTimeout(async () => {
       await this.preloadModule(() => import('./reports/reports.module'));
-      await this.preloadModule(() => import('./analytics/analytics.module'));
     }, 5000); // 5 seconds after startup
   }
 
@@ -3260,56 +2216,26 @@ export class ModulePreloader implements OnApplicationBootstrap {
       const moduleType = module.default || Object.values(module)[0];
       await this.lazyModuleLoader.load(() => moduleType);
     } catch (error) {
-      // Log but don't crash - preloading is optional
       console.warn('Failed to preload module', error);
     }
   }
 }
 ```
 
-## When to Use Lazy Loading
-
-```typescript
-// Good candidates for lazy loading:
-// 1. Admin panels (small percentage of users)
-// 2. Report generators (periodic use)
-// 3. Bulk import/export (occasional use)
-// 4. Legacy migration modules (temporary)
-// 5. Heavy analytics (background processing)
-
-// NOT good candidates:
-// 1. Core authentication (used every request)
-// 2. Main API endpoints (frequently accessed)
-// 3. Database connections (needed immediately)
-// 4. Middleware/guards (applied globally)
-```
-
-## Why This Matters
-
-- **Startup time**: Faster cold starts in serverless
-- **Memory**: Only load what's needed
-- **Scalability**: Better resource utilization
-- **User experience**: Faster initial response times
-
-## Reference
-
-- [NestJS Lazy Loading Modules](https://docs.nestjs.com/fundamentals/lazy-loading-modules)
-- [Module Reference](https://docs.nestjs.com/fundamentals/module-ref)
+Reference: [NestJS Lazy Loading Modules](https://docs.nestjs.com/fundamentals/lazy-loading-modules)
 
 ---
 
 ### 5.3 Optimize Database Queries
 
-**Impact: HIGH** - Database queries are often the biggest performance bottleneck
-
-## Explanation
+**Impact: HIGH** - Database queries are typically the largest source of latency
 
 Select only needed columns, use proper indexes, avoid over-fetching relations, and consider query performance when designing your data access. Most API slowness traces back to inefficient database queries.
 
-## Incorrect
+**Incorrect (over-fetching data and missing indexes):**
 
 ```typescript
-// DON'T: Select everything when you need few fields
+// Select everything when you need few fields
 @Injectable()
 export class UsersService {
   async findAllEmails(): Promise<string[]> {
@@ -3328,7 +2254,7 @@ export class UsersService {
   }
 }
 
-// DON'T: No indexes on frequently queried columns
+// No indexes on frequently queried columns
 @Entity()
 export class Order {
   @Column()
@@ -3337,15 +2263,9 @@ export class Order {
   @Column()
   status: string; // No index - slow status filtering
 }
-
-// DON'T: Raw queries without parameters
-async findByEmail(email: string): Promise<User> {
-  return this.repo.query(`SELECT * FROM users WHERE email = '${email}'`);
-  // SQL injection risk + no query plan caching
-}
 ```
 
-## Correct
+**Correct (select only needed data with proper indexes):**
 
 ```typescript
 // Select only needed columns
@@ -3382,7 +2302,6 @@ export class UsersService {
         posts: {
           id: true,
           title: true,
-          // Don't select post.content unless needed
         },
       },
     });
@@ -3409,20 +2328,6 @@ export class Order {
   createdAt: Date;
 }
 
-// Use parameterized queries
-async findByEmail(email: string): Promise<User> {
-  return this.repo.findOne({ where: { email } });
-  // Or with QueryBuilder:
-  return this.repo
-    .createQueryBuilder('user')
-    .where('user.email = :email', { email })
-    .getOne();
-}
-```
-
-## Pagination and Limiting
-
-```typescript
 // Always paginate large datasets
 @Injectable()
 export class OrdersService {
@@ -3443,108 +2348,23 @@ export class OrdersService {
       },
     };
   }
-
-  // Cursor-based pagination for better performance
-  async findAfter(cursor: string, limit = 20): Promise<Order[]> {
-    return this.repo
-      .createQueryBuilder('order')
-      .where('order.id > :cursor', { cursor })
-      .orderBy('order.id', 'ASC')
-      .take(limit)
-      .getMany();
-  }
 }
 ```
 
-## Query Analysis
-
-```typescript
-// Enable query logging to identify slow queries
-TypeOrmModule.forRoot({
-  logging: ['query', 'slow_query'],
-  maxQueryExecutionTime: 1000, // Log queries > 1 second
-});
-
-// Use EXPLAIN to analyze query plans
-@Injectable()
-export class QueryAnalyzer {
-  async analyzeQuery(query: string): Promise<any> {
-    return this.dataSource.query(`EXPLAIN ANALYZE ${query}`);
-  }
-}
-
-// Profile query in development
-async findSlowQuery(): Promise<void> {
-  const start = Date.now();
-  const result = await this.repo
-    .createQueryBuilder('user')
-    .leftJoinAndSelect('user.posts', 'post')
-    .getMany();
-  console.log(`Query took ${Date.now() - start}ms, returned ${result.length} rows`);
-}
-```
-
-## Batch Operations
-
-```typescript
-// Batch inserts for bulk data
-@Injectable()
-export class ImportService {
-  async importUsers(users: CreateUserDto[]): Promise<void> {
-    // DON'T: Insert one by one
-    // for (const user of users) {
-    //   await this.repo.save(user);
-    // }
-
-    // DO: Batch insert
-    await this.repo
-      .createQueryBuilder()
-      .insert()
-      .into(User)
-      .values(users)
-      .execute();
-
-    // Or use chunks for very large datasets
-    const chunks = this.chunkArray(users, 1000);
-    for (const chunk of chunks) {
-      await this.repo.save(chunk);
-    }
-  }
-
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
-      array.slice(i * size, i * size + size),
-    );
-  }
-}
-```
-
-## Why This Matters
-
-- **Latency**: Unoptimized queries add seconds to responses
-- **Scalability**: Bad queries don't scale with data growth
-- **Cost**: More database resources needed for inefficient queries
-- **User experience**: Slow APIs frustrate users
-
-## Reference
-
-- [TypeORM Query Builder](https://typeorm.io/select-query-builder)
-- [PostgreSQL EXPLAIN](https://www.postgresql.org/docs/current/sql-explain.html)
+Reference: [TypeORM Query Builder](https://typeorm.io/select-query-builder)
 
 ---
 
 ### 5.4 Use Caching Strategically
 
-**Impact: HIGH** - 10-100x response time improvement for cached data
-
-## Explanation
+**Impact: HIGH** - Dramatically reduces database load and response times
 
 Implement caching for expensive operations, frequently accessed data, and external API calls. Use NestJS CacheModule with appropriate TTLs and cache invalidation strategies. Don't cache everything - focus on high-impact areas.
 
-## Incorrect
+**Incorrect (no caching or caching everything):**
 
 ```typescript
-// DON'T: No caching for expensive, repeated queries
+// No caching for expensive, repeated queries
 @Injectable()
 export class ProductsService {
   async getPopular(): Promise<Product[]> {
@@ -3560,7 +2380,7 @@ export class ProductsService {
   }
 }
 
-// DON'T: Cache everything without thought
+// Cache everything without thought
 @Injectable()
 export class UsersService {
   @CacheKey('users')
@@ -3573,7 +2393,7 @@ export class UsersService {
 }
 ```
 
-## Correct
+**Correct (strategic caching with proper invalidation):**
 
 ```typescript
 // Setup caching module
@@ -3614,17 +2434,6 @@ export class ProductsService {
     return products;
   }
 
-  private async fetchPopularProducts(): Promise<Product[]> {
-    return this.productsRepo
-      .createQueryBuilder('p')
-      .leftJoin('p.orders', 'o')
-      .select('p.*, COUNT(o.id) as orderCount')
-      .groupBy('p.id')
-      .orderBy('orderCount', 'DESC')
-      .limit(20)
-      .getMany();
-  }
-
   // Invalidate cache on changes
   async updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
     const product = await this.productsRepo.save({ id, ...dto });
@@ -3637,49 +2446,21 @@ export class ProductsService {
 @Controller('categories')
 @UseInterceptors(CacheInterceptor)
 export class CategoriesController {
-  // Cache entire endpoint response
   @Get()
   @CacheTTL(30 * 60 * 1000) // 30 minutes - categories rarely change
   findAll(): Promise<Category[]> {
     return this.categoriesService.findAll();
   }
 
-  // Different TTL for different endpoints
   @Get(':id')
   @CacheTTL(60 * 1000) // 1 minute
-  @CacheKey('category') // Auto-appends :id
+  @CacheKey('category')
   findOne(@Param('id') id: string): Promise<Category> {
     return this.categoriesService.findOne(id);
   }
 }
 
-// Cache external API calls
-@Injectable()
-export class ExternalApiService {
-  constructor(
-    @Inject(CACHE_MANAGER) private cache: Cache,
-    private http: HttpService,
-  ) {}
-
-  async getExchangeRate(currency: string): Promise<number> {
-    const cacheKey = `exchange:${currency}`;
-    const cached = await this.cache.get<number>(cacheKey);
-    if (cached) return cached;
-
-    const response = await firstValueFrom(
-      this.http.get(`https://api.exchange.com/rate/${currency}`),
-    );
-
-    await this.cache.set(cacheKey, response.data.rate, 15 * 60 * 1000);
-    return response.data.rate;
-  }
-}
-```
-
-## Cache Invalidation Patterns
-
-```typescript
-// Event-based invalidation
+// Event-based cache invalidation
 @Injectable()
 export class CacheInvalidationService {
   constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
@@ -3691,32 +2472,12 @@ export class CacheInvalidationService {
     await Promise.all([
       this.cache.del('products:popular'),
       this.cache.del(`product:${event.productId}`),
-      this.cache.del(`products:category:${event.categoryId}`),
     ]);
-  }
-}
-
-// Pattern-based invalidation (Redis)
-async invalidatePattern(pattern: string): Promise<void> {
-  const redis = this.cache.store as RedisStore;
-  const keys = await redis.keys(pattern);
-  if (keys.length) {
-    await redis.del(...keys);
   }
 }
 ```
 
-## Why This Matters
-
-- **Performance**: Cached responses are 10-100x faster
-- **Scalability**: Reduces database and API load
-- **Cost**: Fewer database queries = lower infrastructure costs
-- **User experience**: Faster responses improve engagement
-
-## Reference
-
-- [NestJS Caching](https://docs.nestjs.com/techniques/caching)
-- [Keyv Cache Stores](https://github.com/jaredwray/keyv)
+Reference: [NestJS Caching](https://docs.nestjs.com/techniques/caching)
 
 ---
 
@@ -3726,16 +2487,14 @@ async invalidatePattern(pattern: string): Promise<void> {
 
 ### 6.1 Use Supertest for E2E Testing
 
-**Impact: MEDIUM-HIGH** - E2E tests catch integration issues that unit tests miss
-
-## Explanation
+**Impact: HIGH** - Validates the full request/response cycle
 
 End-to-end tests use Supertest to make real HTTP requests against your NestJS application. They test the full stack including middleware, guards, pipes, and interceptors. E2E tests catch integration issues that unit tests miss.
 
-## Incorrect
+**Incorrect (no proper E2E setup or teardown):**
 
 ```typescript
-// DON'T: Only unit test controllers
+// Only unit test controllers
 describe('UsersController', () => {
   it('should return users', async () => {
     const service = { findAll: jest.fn().mockResolvedValue([]) };
@@ -3748,7 +2507,7 @@ describe('UsersController', () => {
   });
 });
 
-// DON'T: E2E tests without proper setup/teardown
+// E2E tests without proper setup/teardown
 describe('Users API', () => {
   it('should create user', async () => {
     const app = await NestFactory.create(AppModule);
@@ -3759,7 +2518,7 @@ describe('Users API', () => {
 });
 ```
 
-## Correct
+**Correct (proper E2E setup with Supertest):**
 
 ```typescript
 // Proper E2E test setup
@@ -3816,24 +2575,6 @@ describe('UsersController (e2e)', () => {
           expect(res.body.message).toContain('email');
         });
     });
-
-    it('should return 400 for missing required fields', () => {
-      return request(app.getHttpServer())
-        .post('/users')
-        .send({})
-        .expect(400);
-    });
-  });
-
-  describe('/users (GET)', () => {
-    it('should return array of users', () => {
-      return request(app.getHttpServer())
-        .get('/users')
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-        });
-    });
   });
 
   describe('/users/:id (GET)', () => {
@@ -3844,11 +2585,8 @@ describe('UsersController (e2e)', () => {
     });
   });
 });
-```
 
-## Testing with Authentication
-
-```typescript
+// Testing with authentication
 describe('Protected Routes (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
@@ -3885,20 +2623,9 @@ describe('Protected Routes (e2e)', () => {
         expect(res.body.email).toBe('test@test.com');
       });
   });
-
-  it('should deny access with invalid token', () => {
-    return request(app.getHttpServer())
-      .get('/users/me')
-      .set('Authorization', 'Bearer invalid-token')
-      .expect(401);
-  });
 });
-```
 
-## Database Isolation
-
-```typescript
-// Use test database and clean between tests
+// Database isolation for E2E tests
 describe('Orders API (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
@@ -3927,60 +2654,23 @@ describe('Orders API (e2e)', () => {
     await dataSource.destroy();
     await app.close();
   });
-
-  it('should create order and update inventory', async () => {
-    // Seed test data
-    await dataSource.getRepository(Product).save({
-      id: 'prod-1',
-      name: 'Test Product',
-      stock: 10,
-    });
-
-    // Create order
-    const response = await request(app.getHttpServer())
-      .post('/orders')
-      .send({
-        items: [{ productId: 'prod-1', quantity: 2 }],
-      })
-      .expect(201);
-
-    expect(response.body.total).toBeDefined();
-
-    // Verify inventory updated
-    const product = await dataSource.getRepository(Product).findOne({
-      where: { id: 'prod-1' },
-    });
-    expect(product.stock).toBe(8);
-  });
 });
 ```
 
-## Why This Matters
-
-- **Full stack testing**: Catches routing, middleware, serialization bugs
-- **Integration issues**: Tests component interactions
-- **Real behavior**: Tests actual HTTP request/response
-- **Confidence**: Ensures API contract works as expected
-
-## Reference
-
-- [NestJS E2E Testing](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)
-- [Supertest](https://github.com/visionmedia/supertest)
+Reference: [NestJS E2E Testing](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)
 
 ---
 
 ### 6.2 Mock External Services in Tests
 
-**Impact: MEDIUM-HIGH** - External dependencies make tests slow, flaky, and expensive
-
-## Explanation
+**Impact: HIGH** - Ensures fast, reliable, deterministic tests
 
 Never call real external services (APIs, databases, message queues) in unit tests. Mock them to ensure tests are fast, deterministic, and don't incur costs. Use realistic mock data and test edge cases like timeouts and errors.
 
-## Incorrect
+**Incorrect (calling real APIs and databases):**
 
 ```typescript
-// DON'T: Call real APIs in tests
+// Call real APIs in tests
 describe('PaymentService', () => {
   it('should process payment', async () => {
     const service = new PaymentService(new StripeClient(realApiKey));
@@ -3990,7 +2680,7 @@ describe('PaymentService', () => {
   });
 });
 
-// DON'T: Use real database
+// Use real database
 describe('UsersService', () => {
   beforeEach(async () => {
     await connection.query('DELETE FROM users'); // Modifies real DB
@@ -4002,14 +2692,14 @@ describe('UsersService', () => {
   });
 });
 
-// DON'T: Incomplete mocks
+// Incomplete mocks
 const mockHttpService = {
   get: jest.fn().mockResolvedValue({ data: {} }),
   // Missing error scenarios, missing other methods
 };
 ```
 
-## Correct
+**Correct (mock all external dependencies):**
 
 ```typescript
 // Mock HTTP service properly
@@ -4049,9 +2739,6 @@ describe('WeatherService', () => {
     const result = await service.getWeather('NYC');
 
     expect(result).toEqual({ temperature: 72, humidity: 45 });
-    expect(httpService.get).toHaveBeenCalledWith(
-      expect.stringContaining('NYC'),
-    );
   });
 
   it('should handle API timeout', async () => {
@@ -4072,11 +2759,7 @@ describe('WeatherService', () => {
     await expect(service.getWeather('NYC')).rejects.toThrow(TooManyRequestsException);
   });
 });
-```
 
-## Mock Database with Repository Pattern
-
-```typescript
 // Mock repository instead of database
 describe('UsersService', () => {
   let service: UsersService;
@@ -4111,18 +2794,8 @@ describe('UsersService', () => {
     expect(result).toEqual(mockUser);
     expect(repo.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
   });
-
-  it('should throw NotFoundException for missing user', async () => {
-    repo.findOne.mockResolvedValue(null);
-
-    await expect(service.findById('999')).rejects.toThrow(NotFoundException);
-  });
 });
-```
 
-## Mock Third-Party SDKs
-
-```typescript
 // Create mock factory for complex SDKs
 function createMockStripe(): jest.Mocked<Stripe> {
   return {
@@ -4136,63 +2809,10 @@ function createMockStripe(): jest.Mocked<Stripe> {
       create: jest.fn(),
       retrieve: jest.fn(),
     },
-    refunds: {
-      create: jest.fn(),
-    },
   } as any;
 }
 
-describe('PaymentService', () => {
-  let service: PaymentService;
-  let stripe: jest.Mocked<Stripe>;
-
-  beforeEach(async () => {
-    stripe = createMockStripe();
-
-    const module = await Test.createTestingModule({
-      providers: [
-        PaymentService,
-        { provide: STRIPE_CLIENT, useValue: stripe },
-      ],
-    }).compile();
-
-    service = module.get(PaymentService);
-  });
-
-  it('should create payment intent', async () => {
-    stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_123',
-      status: 'requires_payment_method',
-      client_secret: 'secret_123',
-    } as any);
-
-    const result = await service.createPayment(1000, 'usd');
-
-    expect(result.clientSecret).toBe('secret_123');
-    expect(stripe.paymentIntents.create).toHaveBeenCalledWith({
-      amount: 1000,
-      currency: 'usd',
-    });
-  });
-
-  it('should handle card declined', async () => {
-    stripe.paymentIntents.create.mockRejectedValue({
-      type: 'StripeCardError',
-      code: 'card_declined',
-      message: 'Your card was declined',
-    });
-
-    await expect(service.createPayment(1000, 'usd')).rejects.toThrow(
-      BadRequestException,
-    );
-  });
-});
-```
-
-## Mock Time and Random Values
-
-```typescript
-// Mock Date for time-dependent tests
+// Mock time for time-dependent tests
 describe('TokenService', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -4212,39 +2832,22 @@ describe('TokenService', () => {
     expect(await service.isValid(token)).toBe(false);
   });
 });
-
-// Mock random/UUID for deterministic tests
-jest.mock('crypto', () => ({
-  randomUUID: jest.fn().mockReturnValue('mock-uuid-123'),
-}));
 ```
 
-## Why This Matters
-
-- **Speed**: Mocked tests run in milliseconds
-- **Reliability**: No network flakiness or service outages
-- **Cost**: No API call charges in CI/CD
-- **Isolation**: Test your code, not external services
-
-## Reference
-
-- [Jest Mocking](https://jestjs.io/docs/mock-functions)
-- [NestJS Testing](https://docs.nestjs.com/fundamentals/testing)
+Reference: [Jest Mocking](https://jestjs.io/docs/mock-functions)
 
 ---
 
 ### 6.3 Use Testing Module for Unit Tests
 
-**Impact: MEDIUM-HIGH** - Enables proper DI mocking and isolated testing
-
-## Explanation
+**Impact: HIGH** - Enables proper isolated testing with mocked dependencies
 
 Use `@nestjs/testing` module to create isolated test environments with mocked dependencies. This ensures your tests run fast, don't depend on external services, and properly test your business logic in isolation.
 
-## Incorrect
+**Incorrect (manual instantiation bypassing DI):**
 
 ```typescript
-// DON'T: Instantiate services manually without DI
+// Instantiate services manually without DI
 describe('UsersService', () => {
   it('should create user', async () => {
     // Manual instantiation bypasses DI
@@ -4256,7 +2859,7 @@ describe('UsersService', () => {
   });
 });
 
-// DON'T: Test implementation details
+// Test implementation details
 describe('UsersController', () => {
   it('should call service', async () => {
     const service = { create: jest.fn() };
@@ -4269,7 +2872,7 @@ describe('UsersController', () => {
 });
 ```
 
-## Correct
+**Correct (use Test.createTestingModule with mocked dependencies):**
 
 ```typescript
 // Use Test.createTestingModule for proper DI
@@ -4341,50 +2944,8 @@ describe('UsersService', () => {
     });
   });
 });
-```
 
-## Controller Testing
-
-```typescript
-describe('UsersController', () => {
-  let controller: UsersController;
-  let service: jest.Mocked<UsersService>;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [
-        {
-          provide: UsersService,
-          useValue: {
-            create: jest.fn(),
-            findById: jest.fn(),
-            findAll: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    controller = module.get<UsersController>(UsersController);
-    service = module.get(UsersService);
-  });
-
-  it('should return user on successful creation', async () => {
-    const dto = { name: 'John', email: 'john@test.com' };
-    const expectedUser = { id: '1', ...dto };
-
-    service.create.mockResolvedValue(expectedUser);
-
-    const result = await controller.create(dto);
-
-    expect(result).toEqual(expectedUser);
-  });
-});
-```
-
-## Testing Guards and Interceptors
-
-```typescript
+// Testing guards and interceptors
 describe('RolesGuard', () => {
   let guard: RolesGuard;
   let reflector: Reflector;
@@ -4411,13 +2972,6 @@ describe('RolesGuard', () => {
 
     expect(guard.canActivate(context)).toBe(true);
   });
-
-  it('should deny user for admin-only route', () => {
-    const context = createMockExecutionContext({ user: { roles: ['user'] } });
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
-
-    expect(guard.canActivate(context)).toBe(false);
-  });
 });
 
 function createMockExecutionContext(request: Partial<Request>): ExecutionContext {
@@ -4431,17 +2985,7 @@ function createMockExecutionContext(request: Partial<Request>): ExecutionContext
 }
 ```
 
-## Why This Matters
-
-- **Isolation**: Tests don't depend on external services
-- **Speed**: Mocked dependencies make tests fast
-- **Reliability**: No flaky tests from network issues
-- **DI parity**: Tests match production DI behavior
-
-## Reference
-
-- [NestJS Testing](https://docs.nestjs.com/fundamentals/testing)
-- [Testing Utilities](https://docs.nestjs.com/fundamentals/testing#testing-utilities)
+Reference: [NestJS Testing](https://docs.nestjs.com/fundamentals/testing)
 
 ---
 
@@ -4451,16 +2995,14 @@ function createMockExecutionContext(request: Partial<Request>): ExecutionContext
 
 ### 7.1 Avoid N+1 Query Problems
 
-**Impact: HIGH** - N+1 queries cause exponential database load and slow responses
-
-## Explanation
+**Impact: HIGH** - N+1 queries are one of the most common performance killers
 
 N+1 queries occur when you fetch a list of entities, then make an additional query for each entity to load related data. Use eager loading with `relations`, query builder joins, or DataLoader to batch queries efficiently.
 
-## Incorrect
+**Incorrect (lazy loading in loops causes N+1):**
 
 ```typescript
-// DON'T: Lazy loading in loops causes N+1
+// Lazy loading in loops causes N+1
 @Injectable()
 export class OrdersService {
   async getOrdersWithItems(userId: string): Promise<Order[]> {
@@ -4476,7 +3018,7 @@ export class OrdersService {
   }
 }
 
-// DON'T: Accessing lazy relations without loading
+// Accessing lazy relations without loading
 @Controller('users')
 export class UsersController {
   @Get()
@@ -4488,7 +3030,7 @@ export class UsersController {
 }
 ```
 
-## Correct
+**Correct (use relations for eager loading):**
 
 ```typescript
 // Use relations option for eager loading
@@ -4545,12 +3087,8 @@ async getOrderSummaries(userId: string): Promise<OrderSummary[]> {
     },
   });
 }
-```
 
-## DataLoader for GraphQL
-
-```typescript
-// Use DataLoader to batch and cache queries
+// Use DataLoader for GraphQL to batch and cache queries
 import DataLoader from 'dataloader';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -4580,64 +3118,35 @@ async posts(@Parent() user: User): Promise<Post[]> {
   // DataLoader batches multiple calls into single query
   return this.postsLoader.batchPosts.load(user.id);
 }
-```
 
-## Detecting N+1 Queries
-
-```typescript
-// Enable query logging in development
+// Enable query logging in development to detect N+1
 TypeOrmModule.forRoot({
   logging: ['query', 'error'],
   logger: 'advanced-console',
 });
-
-// Or use a custom logger to detect patterns
-@Injectable()
-export class QueryLogger implements Logger {
-  private queryCount = 0;
-
-  logQuery(query: string) {
-    this.queryCount++;
-    if (this.queryCount > 10) {
-      console.warn(`Possible N+1 detected: ${this.queryCount} queries`);
-    }
-  }
-}
 ```
 
-## Why This Matters
-
-- **Performance**: N+1 queries scale terribly (100 items = 101 queries)
-- **Database load**: Each query has overhead (connection, parsing, execution)
-- **Latency**: Sequential queries add up quickly
-- **Scalability**: Problems multiply under load
-
-## Reference
-
-- [TypeORM Relations](https://typeorm.io/relations)
-- [TypeORM Query Builder](https://typeorm.io/select-query-builder)
+Reference: [TypeORM Relations](https://typeorm.io/relations)
 
 ---
 
 ### 7.2 Use Database Migrations
 
-**Impact: HIGH** - Migrations ensure consistent database schema across environments
-
-## Explanation
+**Impact: HIGH** - Enables safe, repeatable database schema changes
 
 Never use `synchronize: true` in production. Use migrations for all schema changes. Migrations provide version control for your database, enable safe rollbacks, and ensure consistency across all environments.
 
-## Incorrect
+**Incorrect (using synchronize or manual SQL):**
 
 ```typescript
-// DON'T: Use synchronize in production
+// Use synchronize in production
 TypeOrmModule.forRoot({
   type: 'postgres',
   synchronize: true, // DANGEROUS in production!
   // Can drop columns, tables, or data
 });
 
-// DON'T: Manual SQL in production
+// Manual SQL in production
 @Injectable()
 export class DatabaseService {
   async addColumn(): Promise<void> {
@@ -4646,7 +3155,7 @@ export class DatabaseService {
   }
 }
 
-// DON'T: Modify entities without migration
+// Modify entities without migration
 @Entity()
 export class User {
   @Column()
@@ -4657,11 +3166,11 @@ export class User {
 }
 ```
 
-## Correct
+**Correct (use migrations for all schema changes):**
 
 ```typescript
 // Configure TypeORM for migrations
-// ormconfig.ts or data-source.ts
+// data-source.ts
 export const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST,
@@ -4686,27 +3195,7 @@ TypeOrmModule.forRootAsync({
     migrationsRun: true,
   }),
 });
-```
 
-## Generate and Run Migrations
-
-```bash
-# Generate migration from entity changes
-npx typeorm migration:generate -d ./data-source.ts ./migrations/AddUserAge
-
-# Create empty migration for custom SQL
-npx typeorm migration:create ./migrations/SeedInitialData
-
-# Run pending migrations
-npx typeorm migration:run -d ./data-source.ts
-
-# Revert last migration
-npx typeorm migration:revert -d ./data-source.ts
-```
-
-## Migration Best Practices
-
-```typescript
 // migrations/1705312800000-AddUserAge.ts
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
@@ -4764,88 +3253,20 @@ export class RenameNameToFullName1705312900000 implements MigrationInterface {
 }
 ```
 
-## Data Migrations
-
-```typescript
-// Migrate data, not just schema
-export class MigrateUserRoles1705313000000 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create new roles table
-    await queryRunner.query(`
-      CREATE TABLE "roles" (
-        "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-        "name" varchar(50) NOT NULL UNIQUE
-      )
-    `);
-
-    // Seed default roles
-    await queryRunner.query(`
-      INSERT INTO "roles" ("name") VALUES ('admin'), ('user'), ('moderator')
-    `);
-
-    // Create user_roles junction table
-    await queryRunner.query(`
-      CREATE TABLE "user_roles" (
-        "user_id" uuid REFERENCES "users"("id") ON DELETE CASCADE,
-        "role_id" uuid REFERENCES "roles"("id") ON DELETE CASCADE,
-        PRIMARY KEY ("user_id", "role_id")
-      )
-    `);
-
-    // Migrate existing data
-    await queryRunner.query(`
-      INSERT INTO "user_roles" ("user_id", "role_id")
-      SELECT u.id, r.id
-      FROM "users" u, "roles" r
-      WHERE u.is_admin = true AND r.name = 'admin'
-    `);
-
-    // Remove old column after migration
-    await queryRunner.query(`ALTER TABLE "users" DROP COLUMN "is_admin"`);
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "users" ADD "is_admin" boolean DEFAULT false`);
-    await queryRunner.query(`
-      UPDATE "users" u SET "is_admin" = true
-      WHERE EXISTS (
-        SELECT 1 FROM "user_roles" ur
-        JOIN "roles" r ON ur.role_id = r.id
-        WHERE ur.user_id = u.id AND r.name = 'admin'
-      )
-    `);
-    await queryRunner.query(`DROP TABLE "user_roles"`);
-    await queryRunner.query(`DROP TABLE "roles"`);
-  }
-}
-```
-
-## Why This Matters
-
-- **Safety**: No accidental data loss from sync
-- **Consistency**: Same schema in all environments
-- **Auditability**: Version control for database changes
-- **Rollback**: Ability to undo problematic changes
-
-## Reference
-
-- [TypeORM Migrations](https://typeorm.io/migrations)
-- [Database Migration Best Practices](https://documentation.red-gate.com/soc/common-concepts/static-data)
+Reference: [TypeORM Migrations](https://typeorm.io/migrations)
 
 ---
 
 ### 7.3 Use Transactions for Multi-Step Operations
 
-**Impact: MEDIUM-HIGH** - Prevents data inconsistency and partial updates
-
-## Explanation
+**Impact: HIGH** - Ensures data consistency in multi-step operations
 
 When multiple database operations must succeed or fail together, wrap them in a transaction. This prevents partial updates that leave your data in an inconsistent state. Use TypeORM's transaction APIs or the DataSource query runner for complex scenarios.
 
-## Incorrect
+**Incorrect (multiple saves without transaction):**
 
 ```typescript
-// DON'T: Multiple saves without transaction
+// Multiple saves without transaction
 @Injectable()
 export class OrdersService {
   async createOrder(userId: string, items: OrderItem[]): Promise<Order> {
@@ -4865,7 +3286,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (use DataSource.transaction for automatic rollback):**
 
 ```typescript
 // Use DataSource.transaction() for automatic rollback
@@ -4970,65 +3391,7 @@ export class UsersRepository {
 }
 ```
 
-## Transaction Decorators (Custom)
-
-```typescript
-// Create a transaction decorator for cleaner code
-export function Transactional() {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-  ) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
-      const dataSource = this.dataSource as DataSource;
-      return dataSource.transaction(async (manager) => {
-        // Temporarily inject transactional manager
-        const originalManager = this.entityManager;
-        this.entityManager = manager;
-        try {
-          return await originalMethod.apply(this, args);
-        } finally {
-          this.entityManager = originalManager;
-        }
-      });
-    };
-
-    return descriptor;
-  };
-}
-
-// Usage
-@Injectable()
-export class OrdersService {
-  constructor(
-    private dataSource: DataSource,
-    private entityManager: EntityManager,
-  ) {}
-
-  @Transactional()
-  async createOrder(dto: CreateOrderDto): Promise<Order> {
-    // All repo calls use transactional manager automatically
-    const order = await this.entityManager.save(Order, dto);
-    await this.entityManager.save(AuditLog, { action: 'order.created' });
-    return order;
-  }
-}
-```
-
-## Why This Matters
-
-- **Data integrity**: All-or-nothing operations prevent corruption
-- **Consistency**: No partial updates from failed operations
-- **Audit compliance**: Complete operation trails
-- **Error recovery**: Failed operations leave no traces
-
-## Reference
-
-- [TypeORM Transactions](https://typeorm.io/transactions)
-- [NestJS Database](https://docs.nestjs.com/techniques/database)
+Reference: [TypeORM Transactions](https://typeorm.io/transactions)
 
 ---
 
@@ -5038,16 +3401,14 @@ export class OrdersService {
 
 ### 8.1 Use DTOs and Serialization for API Responses
 
-**Impact: MEDIUM** - Prevents data leaks and ensures consistent API contracts
-
-## Explanation
+**Impact: MEDIUM** - Response DTOs prevent accidental data exposure and ensure consistency
 
 Never return entity objects directly from controllers. Use response DTOs with class-transformer's `@Exclude()` and `@Expose()` decorators to control exactly what data is sent to clients. This prevents accidental exposure of sensitive fields and provides a stable API contract.
 
-## Incorrect
+**Incorrect (returning entities directly or manual spreading):**
 
 ```typescript
-// DON'T: Return entities directly
+// Return entities directly
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -5058,7 +3419,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Manual object spreading (error-prone)
+// Manual object spreading (error-prone)
 @Get(':id')
 async findOne(@Param('id') id: string) {
   const user = await this.usersService.findById(id);
@@ -5072,7 +3433,7 @@ async findOne(@Param('id') id: string) {
 }
 ```
 
-## Correct
+**Correct (use class-transformer with @Exclude and response DTOs):**
 
 ```typescript
 // Enable class-transformer globally
@@ -5172,12 +3533,8 @@ export class UsersController {
     });
   }
 }
-```
 
-## Groups for Conditional Serialization
-
-```typescript
-// Different response shapes for different contexts
+// Groups for conditional serialization
 export class UserDto {
   @Expose()
   id: string;
@@ -5218,32 +3575,20 @@ export class UsersController {
 }
 ```
 
-## Why This Matters
-
-- **Security**: Prevents accidental exposure of sensitive data
-- **API stability**: DTOs provide stable contracts regardless of entity changes
-- **Flexibility**: Different response shapes for different consumers
-- **Documentation**: DTOs serve as response schema documentation
-
-## Reference
-
-- [NestJS Serialization](https://docs.nestjs.com/techniques/serialization)
-- [class-transformer](https://github.com/typestack/class-transformer)
+Reference: [NestJS Serialization](https://docs.nestjs.com/techniques/serialization)
 
 ---
 
 ### 8.2 Use Interceptors for Cross-Cutting Concerns
 
-**Impact: MEDIUM-HIGH** - Interceptors centralize logging, transformation, and caching logic
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Interceptors provide clean separation for cross-cutting logic
 
 Interceptors can transform responses, add logging, handle caching, and measure performance without polluting your business logic. They wrap the route handler execution, giving you access to both the request and response streams.
 
-## Incorrect
+**Incorrect (logging and transformation in every method):**
 
 ```typescript
-// DON'T: Logging in every controller method
+// Logging in every controller method
 @Controller('users')
 export class UsersController {
   @Get()
@@ -5270,7 +3615,7 @@ export class UsersController {
   // Repeated in every method!
 }
 
-// DON'T: Manual response wrapping
+// Manual response wrapping
 @Get()
 async findAll(): Promise<{ data: User[]; meta: Meta }> {
   const users = await this.usersService.findAll();
@@ -5281,7 +3626,7 @@ async findAll(): Promise<{ data: User[]; meta: Meta }> {
 }
 ```
 
-## Correct
+**Correct (use interceptors for cross-cutting concerns):**
 
 ```typescript
 // Logging interceptor
@@ -5364,11 +3709,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 }
-```
 
-## Cache Interceptor
-
-```typescript
 // Custom cache interceptor with TTL
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
@@ -5412,12 +3753,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
 async findAll(): Promise<User[]> {
   return this.usersService.findAll();
 }
-```
 
-## Error Mapping Interceptor
-
-```typescript
-// Map internal errors to HTTP errors
+// Error mapping interceptor
 @Injectable()
 export class ErrorMappingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -5438,32 +3775,20 @@ export class ErrorMappingInterceptor implements NestInterceptor {
 }
 ```
 
-## Why This Matters
-
-- **DRY**: Write logging/transformation once, apply everywhere
-- **Testability**: Interceptors can be tested in isolation
-- **Flexibility**: Easy to add/remove cross-cutting behavior
-- **Clean code**: Controllers focus on business logic only
-
-## Reference
-
-- [NestJS Interceptors](https://docs.nestjs.com/interceptors)
-- [RxJS Operators](https://rxjs.dev/guide/operators)
+Reference: [NestJS Interceptors](https://docs.nestjs.com/interceptors)
 
 ---
 
 ### 8.3 Use Pipes for Input Transformation
 
-**Impact: MEDIUM** - Pipes transform and validate input before reaching handlers
-
-## Explanation
+**Impact: MEDIUM** - Pipes ensure clean, validated data reaches your handlers
 
 Use built-in pipes like `ParseIntPipe`, `ParseUUIDPipe`, and `DefaultValuePipe` for common transformations. Create custom pipes for business-specific transformations. Pipes separate validation/transformation logic from controllers.
 
-## Incorrect
+**Incorrect (manual type parsing in handlers):**
 
 ```typescript
-// DON'T: Manual type parsing in handlers
+// Manual type parsing in handlers
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -5488,7 +3813,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Type coercion without validation
+// Type coercion without validation
 @Get()
 async search(@Query('price') price: string): Promise<Product[]> {
   const priceNum = +price; // NaN if invalid, no error
@@ -5496,7 +3821,7 @@ async search(@Query('price') price: string): Promise<Product[]> {
 }
 ```
 
-## Correct
+**Correct (use built-in and custom pipes):**
 
 ```typescript
 // Use built-in pipes for common transformations
@@ -5544,12 +3869,8 @@ async getReports(
 ): Promise<Report[]> {
   return this.reportsService.findBetween(from, to);
 }
-```
 
-## Custom Transformation Pipes
-
-```typescript
-// Trim and lowercase email
+// Custom transformation pipes
 @Injectable()
 export class NormalizeEmailPipe implements PipeTransform<string, string> {
   transform(value: string): string {
@@ -5584,11 +3905,7 @@ export class SanitizeHtmlPipe implements PipeTransform<string, string> {
     return sanitizeHtml(value, { allowedTags: [] });
   }
 }
-```
 
-## Validation Pipe with Transform
-
-```typescript
 // Global validation pipe with transformation
 app.useGlobalPipes(
   new ValidationPipe({
@@ -5633,12 +3950,8 @@ async findAll(@Query() dto: FindProductsDto): Promise<Product[]> {
   // dto is already transformed and validated
   return this.productsService.findAll(dto);
 }
-```
 
-## Pipe Error Customization
-
-```typescript
-// Custom error messages
+// Pipe error customization
 @Injectable()
 export class CustomParseIntPipe extends ParseIntPipe {
   constructor() {
@@ -5665,32 +3978,20 @@ async findOne(
 }
 ```
 
-## Why This Matters
-
-- **Separation of concerns**: Transformation logic separate from business logic
-- **Reusability**: Same pipe used across multiple handlers
-- **Type safety**: Handlers receive correct types
-- **Clean handlers**: Less boilerplate in controller methods
-
-## Reference
-
-- [NestJS Pipes](https://docs.nestjs.com/pipes)
-- [Built-in Pipes](https://docs.nestjs.com/pipes#built-in-pipes)
+Reference: [NestJS Pipes](https://docs.nestjs.com/pipes)
 
 ---
 
 ### 8.4 Use API Versioning for Breaking Changes
 
-**Impact: MEDIUM** - Versioning enables backward-compatible API evolution
-
-## Explanation
+**Impact: MEDIUM** - Versioning allows you to evolve APIs without breaking existing clients
 
 Use NestJS built-in versioning when making breaking changes to your API. Choose a versioning strategy (URI, header, or media type) and apply it consistently. This allows old clients to continue working while new clients use updated endpoints.
 
-## Incorrect
+**Incorrect (breaking changes without versioning):**
 
 ```typescript
-// DON'T: Breaking changes without versioning
+// Breaking changes without versioning
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -5702,7 +4003,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Manual versioning in routes
+// Manual versioning in routes
 @Controller('v1/users')
 export class UsersV1Controller {}
 
@@ -5711,7 +4012,7 @@ export class UsersV2Controller {}
 // Inconsistent, error-prone, hard to maintain
 ```
 
-## Correct
+**Correct (use NestJS built-in versioning):**
 
 ```typescript
 // Enable versioning in main.ts
@@ -5773,12 +4074,8 @@ export class UsersV2Controller {
     };
   }
 }
-```
 
-## Per-Route Versioning
-
-```typescript
-// Different versions for different routes
+// Per-route versioning - different versions for different routes
 @Controller('users')
 export class UsersController {
   @Get()
@@ -5805,12 +4102,8 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 }
-```
 
-## Shared Service with Version-Specific Logic
-
-```typescript
-// Service handles version differences internally
+// Shared service with version-specific logic
 @Injectable()
 export class UsersService {
   async findOne(id: string, version: string): Promise<any> {
@@ -5852,12 +4145,8 @@ export class UsersController {
     return this.usersService.findOne(id, version);
   }
 }
-```
 
-## Deprecation Strategy
-
-```typescript
-// Mark old versions as deprecated
+// Deprecation strategy - mark old versions as deprecated
 @Controller('users')
 @Version('1')
 @UseInterceptors(DeprecationInterceptor)
@@ -5878,17 +4167,7 @@ export class DeprecationInterceptor implements NestInterceptor {
 }
 ```
 
-## Why This Matters
-
-- **Backward compatibility**: Existing clients continue working
-- **Gradual migration**: Clients upgrade on their schedule
-- **Clear contracts**: Each version has documented behavior
-- **Safe evolution**: Make breaking changes without breaking clients
-
-## Reference
-
-- [NestJS Versioning](https://docs.nestjs.com/techniques/versioning)
-- [API Versioning Best Practices](https://www.mnot.net/blog/2012/12/04/api-evolution)
+Reference: [NestJS Versioning](https://docs.nestjs.com/techniques/versioning)
 
 ---
 
@@ -5898,16 +4177,14 @@ export class DeprecationInterceptor implements NestInterceptor {
 
 ### 9.1 Implement Health Checks for Microservices
 
-**Impact: MEDIUM-HIGH** - Health checks enable proper orchestration and self-healing
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Health checks enable orchestrators to manage service lifecycle
 
 Implement liveness and readiness probes using `@nestjs/terminus`. Liveness checks determine if the service should be restarted. Readiness checks determine if the service can accept traffic. Proper health checks enable Kubernetes and load balancers to route traffic correctly.
 
-## Incorrect
+**Incorrect (simple ping that doesn't check dependencies):**
 
 ```typescript
-// DON'T: Simple ping that doesn't check dependencies
+// Simple ping that doesn't check dependencies
 @Controller('health')
 export class HealthController {
   @Get()
@@ -5916,7 +4193,7 @@ export class HealthController {
   }
 }
 
-// DON'T: Health check that blocks on slow dependencies
+// Health check that blocks on slow dependencies
 @Controller('health')
 export class HealthController {
   @Get()
@@ -5930,7 +4207,7 @@ export class HealthController {
 }
 ```
 
-## Correct
+**Correct (use @nestjs/terminus for comprehensive health checks):**
 
 ```typescript
 // Use @nestjs/terminus for comprehensive health checks
@@ -5991,11 +4268,7 @@ export class HealthController {
     ]);
   }
 }
-```
 
-## Custom Health Indicators
-
-```typescript
 // Custom indicator for business-specific health
 @Injectable()
 export class QueueHealthIndicator extends HealthIndicator {
@@ -6048,9 +4321,40 @@ readiness() {
     () => this.queue.isHealthy('job-queue'),
   ]);
 }
+
+// Graceful shutdown handling
+@Injectable()
+export class GracefulShutdownService implements OnApplicationShutdown {
+  private isShuttingDown = false;
+
+  isShutdown(): boolean {
+    return this.isShuttingDown;
+  }
+
+  async onApplicationShutdown(signal: string): Promise<void> {
+    this.isShuttingDown = true;
+    console.log(`Shutting down on ${signal}`);
+
+    // Wait for in-flight requests
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+}
+
+// Health check respects shutdown state
+@Get('ready')
+@HealthCheck()
+readiness() {
+  if (this.shutdownService.isShutdown()) {
+    throw new ServiceUnavailableException('Shutting down');
+  }
+
+  return this.health.check([
+    () => this.db.pingCheck('database'),
+  ]);
+}
 ```
 
-## Kubernetes Configuration
+### Kubernetes Configuration
 
 ```yaml
 # Kubernetes deployment with probes
@@ -6091,52 +4395,7 @@ spec:
             failureThreshold: 30
 ```
 
-## Graceful Shutdown
-
-```typescript
-// Proper shutdown handling
-@Injectable()
-export class GracefulShutdownService implements OnApplicationShutdown {
-  private isShuttingDown = false;
-
-  isShutdown(): boolean {
-    return this.isShuttingDown;
-  }
-
-  async onApplicationShutdown(signal: string): Promise<void> {
-    this.isShuttingDown = true;
-    console.log(`Shutting down on ${signal}`);
-
-    // Wait for in-flight requests
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-}
-
-// Health check respects shutdown state
-@Get('ready')
-@HealthCheck()
-readiness() {
-  if (this.shutdownService.isShutdown()) {
-    throw new ServiceUnavailableException('Shutting down');
-  }
-
-  return this.health.check([
-    () => this.db.pingCheck('database'),
-  ]);
-}
-```
-
-## Why This Matters
-
-- **Self-healing**: Kubernetes restarts unhealthy pods
-- **Traffic routing**: Load balancers skip unready instances
-- **Observability**: Know the state of your services
-- **Zero downtime**: Proper rolling deployments
-
-## Reference
-
-- [NestJS Terminus](https://docs.nestjs.com/recipes/terminus)
-- [Kubernetes Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+Reference: [NestJS Terminus](https://docs.nestjs.com/recipes/terminus)
 
 ---
 
@@ -6144,14 +4403,12 @@ readiness() {
 
 **Impact: MEDIUM** - Proper patterns ensure reliable microservice communication
 
-## Explanation
-
 NestJS microservices support two communication patterns: request-response (MessagePattern) and event-based (EventPattern). Use MessagePattern when you need a response, and EventPattern for fire-and-forget notifications. Understanding the difference prevents communication bugs.
 
-## Incorrect
+**Incorrect (using wrong pattern for use case):**
 
 ```typescript
-// DON'T: Use @MessagePattern for fire-and-forget
+// Use @MessagePattern for fire-and-forget
 @Controller()
 export class NotificationsController {
   @MessagePattern('user.created')
@@ -6162,7 +4419,7 @@ export class NotificationsController {
   }
 }
 
-// DON'T: Use @EventPattern expecting a response
+// Use @EventPattern expecting a response
 @Controller()
 export class OrdersController {
   @EventPattern('inventory.check')
@@ -6172,7 +4429,7 @@ export class OrdersController {
   }
 }
 
-// DON'T: Tight coupling in client
+// Tight coupling in client
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -6187,7 +4444,7 @@ export class UsersService {
 }
 ```
 
-## Correct
+**Correct (use MessagePattern for request-response, EventPattern for fire-and-forget):**
 
 ```typescript
 // MessagePattern: Request-Response (when you NEED a response)
@@ -6248,12 +4505,8 @@ export class UsersService {
     return user; // User creation succeeds regardless of event handling
   }
 }
-```
 
-## Hybrid Pattern for Critical Events
-
-```typescript
-// When events are critical but shouldn't block
+// Hybrid pattern for critical events
 @Injectable()
 export class OrdersService {
   async createOrder(dto: CreateOrderDto): Promise<Order> {
@@ -6282,11 +4535,8 @@ export class OrdersService {
     return order;
   }
 }
-```
 
-## Error Handling
-
-```typescript
+// Error handling patterns
 // MessagePattern errors propagate to caller
 @MessagePattern({ cmd: 'get_user' })
 async getUser(userId: string): Promise<User> {
@@ -6310,32 +4560,20 @@ async handleOrderCreated(data: OrderCreatedEvent): Promise<void> {
 }
 ```
 
-## Why This Matters
-
-- **Reliability**: Wrong pattern causes blocking or lost responses
-- **Decoupling**: EventPattern keeps services independent
-- **Resilience**: Fire-and-forget prevents cascade failures
-- **Performance**: Async events don't block critical paths
-
-## Reference
-
-- [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
-- [Message Patterns](https://docs.nestjs.com/microservices/basics#patterns)
+Reference: [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
 
 ---
 
 ### 9.3 Use Message Queues for Background Jobs
 
-**Impact: MEDIUM-HIGH** - Queues enable reliable async processing and workload distribution
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Queues enable reliable background processing
 
 Use `@nestjs/bullmq` for background job processing. Queues decouple long-running tasks from HTTP requests, enable retry logic, and distribute workload across workers. Use them for emails, file processing, notifications, and any task that shouldn't block user requests.
 
-## Incorrect
+**Incorrect (long-running tasks in HTTP handlers):**
 
 ```typescript
-// DON'T: Long-running tasks in HTTP handlers
+// Long-running tasks in HTTP handlers
 @Controller('reports')
 export class ReportsController {
   @Post()
@@ -6348,7 +4586,7 @@ export class ReportsController {
   }
 }
 
-// DON'T: Fire-and-forget without retry
+// Fire-and-forget without retry
 @Injectable()
 export class EmailService {
   async sendWelcome(email: string): Promise<void> {
@@ -6358,13 +4596,13 @@ export class EmailService {
   }
 }
 
-// DON'T: Use setInterval for scheduled tasks
+// Use setInterval for scheduled tasks
 setInterval(async () => {
   await cleanupOldRecords();
 }, 60000); // No error handling, memory leaks
 ```
 
-## Correct
+**Correct (use BullMQ for background processing):**
 
 ```typescript
 // Configure BullMQ
@@ -6462,11 +4700,8 @@ export class ReportsProcessor {
     this.logger.error(`Job ${job.id} failed: ${error.message}`);
   }
 }
-```
 
-## Email Queue with Retry
-
-```typescript
+// Email queue with retry
 @Processor('email')
 export class EmailProcessor {
   @Process('send')
@@ -6506,12 +4741,8 @@ export class NotificationService {
     );
   }
 }
-```
 
-## Scheduled Jobs
-
-```typescript
-// Use Bull's repeatable jobs instead of cron
+// Scheduled jobs
 @Injectable()
 export class ScheduledJobsService implements OnModuleInit {
   constructor(@InjectQueue('maintenance') private queue: Queue) {}
@@ -6555,12 +4786,8 @@ export class MaintenanceProcessor {
     }
   }
 }
-```
 
-## Queue Monitoring
-
-```typescript
-// Add Bull Board for monitoring
+// Queue monitoring with Bull Board
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
@@ -6583,17 +4810,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 export class AdminModule {}
 ```
 
-## Why This Matters
-
-- **Reliability**: Jobs persist through restarts, automatic retry
-- **Scalability**: Distribute load across multiple workers
-- **User experience**: Fast responses, background processing
-- **Observability**: Track job status, monitor queues
-
-## Reference
-
-- [NestJS Queues](https://docs.nestjs.com/techniques/queues)
-- [BullMQ Documentation](https://docs.bullmq.io/)
+Reference: [NestJS Queues](https://docs.nestjs.com/techniques/queues)
 
 ---
 
@@ -6603,16 +4820,14 @@ export class AdminModule {}
 
 ### 10.1 Implement Graceful Shutdown
 
-**Impact: MEDIUM-HIGH** - Graceful shutdown prevents data loss and connection issues during deployments
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Proper shutdown handling ensures zero-downtime deployments
 
 Handle SIGTERM and SIGINT signals to gracefully shutdown your NestJS application. Stop accepting new requests, wait for in-flight requests to complete, close database connections, and clean up resources. This prevents data loss and connection errors during deployments.
 
-## Incorrect
+**Incorrect (ignoring shutdown signals):**
 
 ```typescript
-// DON'T: Ignore shutdown signals
+// Ignore shutdown signals
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   await app.listen(3000);
@@ -6621,7 +4836,7 @@ async function bootstrap() {
   // Database connections are abruptly closed
 }
 
-// DON'T: Long-running tasks without cancellation
+// Long-running tasks without cancellation
 @Injectable()
 export class ProcessingService {
   async processLargeFile(file: File): Promise<void> {
@@ -6634,7 +4849,7 @@ export class ProcessingService {
 }
 ```
 
-## Correct
+**Correct (enable shutdown hooks and handle cleanup):**
 
 ```typescript
 // Enable shutdown hooks in main.ts
@@ -6669,12 +4884,8 @@ async function bootstrap() {
     });
   });
 }
-```
 
-## Lifecycle Hooks for Cleanup
-
-```typescript
-// Service with cleanup on shutdown
+// Lifecycle hooks for cleanup
 @Injectable()
 export class DatabaseService implements OnApplicationShutdown {
   private readonly connections: Connection[] = [];
@@ -6727,12 +4938,8 @@ export class EventsGateway implements OnApplicationShutdown {
     this.server.disconnectSockets();
   }
 }
-```
 
-## Health Check Integration
-
-```typescript
-// Report unhealthy during shutdown
+// Health check integration
 @Injectable()
 export class ShutdownService {
   private isShuttingDown = false;
@@ -6779,12 +4986,8 @@ export class AppShutdownService implements OnApplicationShutdown {
     // Then proceed with cleanup
   }
 }
-```
 
-## Request Tracking for In-Flight Requests
-
-```typescript
-// Track and wait for in-flight requests
+// Request tracking for in-flight requests
 @Injectable()
 export class RequestTracker implements NestMiddleware, OnApplicationShutdown {
   private activeRequests = 0;
@@ -6831,32 +5034,20 @@ export class RequestTracker implements NestMiddleware, OnApplicationShutdown {
 }
 ```
 
-## Why This Matters
-
-- **Zero downtime**: Rolling deployments without dropped requests
-- **Data integrity**: Transactions complete properly
-- **Resource cleanup**: No connection leaks or orphaned processes
-- **User experience**: No failed requests during deploys
-
-## Reference
-
-- [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
-- [Kubernetes Graceful Shutdown](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination)
+Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
 
 ---
 
 ### 10.2 Use ConfigModule for Environment Configuration
 
-**Impact: LOW-MEDIUM** - Centralized config with validation prevents runtime errors
-
-## Explanation
+**Impact: LOW-MEDIUM** - Proper configuration prevents deployment failures
 
 Use `@nestjs/config` for environment-based configuration. Validate configuration at startup to fail fast on misconfigurations. Use namespaced configuration for organization and type safety.
 
-## Incorrect
+**Incorrect (accessing process.env directly):**
 
 ```typescript
-// DON'T: Access process.env directly
+// Access process.env directly
 @Injectable()
 export class DatabaseService {
   constructor() {
@@ -6869,7 +5060,7 @@ export class DatabaseService {
   }
 }
 
-// DON'T: Scattered env access
+// Scattered env access
 @Injectable()
 export class EmailService {
   sendEmail() {
@@ -6880,7 +5071,7 @@ export class EmailService {
 }
 ```
 
-## Correct
+**Correct (use @nestjs/config with validation):**
 
 ```typescript
 // Setup validated configuration
@@ -6945,12 +5136,8 @@ export const validationSchema = Joi.object({
   ],
 })
 export class AppModule {}
-```
 
-## Type-Safe Configuration
-
-```typescript
-// config/configuration.interface.ts
+// Type-safe configuration access
 export interface AppConfig {
   port: number;
   environment: 'development' | 'production' | 'test';
@@ -6980,7 +5167,7 @@ export class AppService {
   }
 }
 
-// Even better: inject namespaced config directly
+// Inject namespaced config directly
 @Injectable()
 export class DatabaseService {
   constructor(
@@ -6992,12 +5179,8 @@ export class DatabaseService {
     const port = this.dbConfig.port; // number
   }
 }
-```
 
-## Environment Files
-
-```typescript
-// ConfigModule supports .env files
+// Environment files support
 ConfigModule.forRoot({
   envFilePath: [
     `.env.${process.env.NODE_ENV}.local`,
@@ -7008,40 +5191,28 @@ ConfigModule.forRoot({
 });
 
 // .env.development
-DB_HOST=localhost
-DB_PORT=5432
+// DB_HOST=localhost
+// DB_PORT=5432
 
 // .env.production
-DB_HOST=prod-db.example.com
-DB_PORT=5432
+// DB_HOST=prod-db.example.com
+// DB_PORT=5432
 ```
 
-## Why This Matters
-
-- **Fail fast**: Validation catches missing config at startup
-- **Type safety**: Prevents typos and type errors
-- **Testability**: Easy to mock configuration in tests
-- **Organization**: Namespaced config scales with app complexity
-
-## Reference
-
-- [NestJS Configuration](https://docs.nestjs.com/techniques/configuration)
-- [Configuration Namespaces](https://docs.nestjs.com/techniques/configuration#configuration-namespaces)
+Reference: [NestJS Configuration](https://docs.nestjs.com/techniques/configuration)
 
 ---
 
 ### 10.3 Use Structured Logging
 
-**Impact: MEDIUM-HIGH** - Structured logs enable efficient debugging and monitoring
-
-## Explanation
+**Impact: MEDIUM-HIGH** - Structured logging enables effective debugging and monitoring
 
 Use NestJS Logger with structured JSON output in production. Include contextual information (request ID, user ID, operation) to trace requests across services. Avoid console.log and implement proper log levels.
 
-## Incorrect
+**Incorrect (using console.log in production):**
 
 ```typescript
-// DON'T: Use console.log in production
+// Use console.log in production
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -7059,15 +5230,15 @@ export class UsersService {
   }
 }
 
-// DON'T: Log sensitive data
+// Log sensitive data
 console.log('Login attempt:', { email, password }); // SECURITY RISK!
 
-// DON'T: Inconsistent log format
+// Inconsistent log format
 logger.log('User ' + userId + ' created at ' + new Date());
 // Hard to parse, no structure
 ```
 
-## Correct
+**Correct (use structured logging with context):**
 
 ```typescript
 // Configure logger in main.ts
@@ -7149,12 +5320,8 @@ export class JsonLogger implements LoggerService {
     );
   }
 }
-```
 
-## Request Context Logging
-
-```typescript
-// Use ClsModule for request-scoped context
+// Request context logging with ClsModule
 import { ClsModule, ClsService } from 'nestjs-cls';
 
 @Module({
@@ -7218,12 +5385,8 @@ export class ContextLogger {
     );
   }
 }
-```
 
-## Pino Integration for Performance
-
-```typescript
-// Use Pino for high-performance logging
+// Pino integration for high-performance logging
 import { LoggerModule } from 'nestjs-pino';
 
 @Module({
@@ -7266,17 +5429,7 @@ export class UsersService {
 }
 ```
 
-## Why This Matters
-
-- **Debugging**: Find issues quickly with searchable logs
-- **Monitoring**: Feed structured logs to observability tools
-- **Compliance**: Audit trails with consistent format
-- **Performance**: Pino is 5x faster than console.log
-
-## Reference
-
-- [NestJS Logger](https://docs.nestjs.com/techniques/logger)
-- [nestjs-pino](https://github.com/iamolegga/nestjs-pino)
+Reference: [NestJS Logger](https://docs.nestjs.com/techniques/logger)
 
 ---
 
@@ -7284,8 +5437,10 @@ export class UsersService {
 
 - https://docs.nestjs.com
 - https://github.com/nestjs/nest
+- https://typeorm.io
+- https://github.com/typestack/class-validator
 - https://github.com/goldbergyoni/nodebestpractices
 
 ---
 
-*Generated by build-agents.ts on 2026-01-15*
+*Generated by build-agents.ts on 2026-01-16*

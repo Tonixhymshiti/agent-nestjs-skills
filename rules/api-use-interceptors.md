@@ -1,26 +1,18 @@
 ---
 title: Use Interceptors for Cross-Cutting Concerns
 impact: MEDIUM-HIGH
-impactDescription: Interceptors centralize logging, transformation, and caching logic
-tags:
-  - api
-  - interceptors
-  - logging
-  - transformation
+impactDescription: Interceptors provide clean separation for cross-cutting logic
+tags: api, interceptors, logging, caching
 ---
 
-# Use Interceptors for Cross-Cutting Concerns
-
-**Impact: MEDIUM-HIGH** - Interceptors provide clean separation for cross-cutting logic
-
-## Explanation
+## Use Interceptors for Cross-Cutting Concerns
 
 Interceptors can transform responses, add logging, handle caching, and measure performance without polluting your business logic. They wrap the route handler execution, giving you access to both the request and response streams.
 
-## Incorrect
+**Incorrect (logging and transformation in every method):**
 
 ```typescript
-// DON'T: Logging in every controller method
+// Logging in every controller method
 @Controller('users')
 export class UsersController {
   @Get()
@@ -47,7 +39,7 @@ export class UsersController {
   // Repeated in every method!
 }
 
-// DON'T: Manual response wrapping
+// Manual response wrapping
 @Get()
 async findAll(): Promise<{ data: User[]; meta: Meta }> {
   const users = await this.usersService.findAll();
@@ -58,7 +50,7 @@ async findAll(): Promise<{ data: User[]; meta: Meta }> {
 }
 ```
 
-## Correct
+**Correct (use interceptors for cross-cutting concerns):**
 
 ```typescript
 // Logging interceptor
@@ -141,11 +133,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 }
-```
 
-## Cache Interceptor
-
-```typescript
 // Custom cache interceptor with TTL
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
@@ -189,12 +177,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
 async findAll(): Promise<User[]> {
   return this.usersService.findAll();
 }
-```
 
-## Error Mapping Interceptor
-
-```typescript
-// Map internal errors to HTTP errors
+// Error mapping interceptor
 @Injectable()
 export class ErrorMappingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -215,14 +199,4 @@ export class ErrorMappingInterceptor implements NestInterceptor {
 }
 ```
 
-## Why This Matters
-
-- **DRY**: Write logging/transformation once, apply everywhere
-- **Testability**: Interceptors can be tested in isolation
-- **Flexibility**: Easy to add/remove cross-cutting behavior
-- **Clean code**: Controllers focus on business logic only
-
-## Reference
-
-- [NestJS Interceptors](https://docs.nestjs.com/interceptors)
-- [RxJS Operators](https://rxjs.dev/guide/operators)
+Reference: [NestJS Interceptors](https://docs.nestjs.com/interceptors)

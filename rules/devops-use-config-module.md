@@ -1,26 +1,18 @@
 ---
 title: Use ConfigModule for Environment Configuration
 impact: LOW-MEDIUM
-impactDescription: Centralized config with validation prevents runtime errors
-tags:
-  - devops
-  - configuration
-  - environment
-  - validation
+impactDescription: Proper configuration prevents deployment failures
+tags: devops, configuration, environment, validation
 ---
 
-# Use ConfigModule for Environment Configuration
-
-**Impact: LOW-MEDIUM** - Proper configuration prevents deployment failures
-
-## Explanation
+## Use ConfigModule for Environment Configuration
 
 Use `@nestjs/config` for environment-based configuration. Validate configuration at startup to fail fast on misconfigurations. Use namespaced configuration for organization and type safety.
 
-## Incorrect
+**Incorrect (accessing process.env directly):**
 
 ```typescript
-// DON'T: Access process.env directly
+// Access process.env directly
 @Injectable()
 export class DatabaseService {
   constructor() {
@@ -33,7 +25,7 @@ export class DatabaseService {
   }
 }
 
-// DON'T: Scattered env access
+// Scattered env access
 @Injectable()
 export class EmailService {
   sendEmail() {
@@ -44,7 +36,7 @@ export class EmailService {
 }
 ```
 
-## Correct
+**Correct (use @nestjs/config with validation):**
 
 ```typescript
 // Setup validated configuration
@@ -109,12 +101,8 @@ export const validationSchema = Joi.object({
   ],
 })
 export class AppModule {}
-```
 
-## Type-Safe Configuration
-
-```typescript
-// config/configuration.interface.ts
+// Type-safe configuration access
 export interface AppConfig {
   port: number;
   environment: 'development' | 'production' | 'test';
@@ -144,7 +132,7 @@ export class AppService {
   }
 }
 
-// Even better: inject namespaced config directly
+// Inject namespaced config directly
 @Injectable()
 export class DatabaseService {
   constructor(
@@ -156,12 +144,8 @@ export class DatabaseService {
     const port = this.dbConfig.port; // number
   }
 }
-```
 
-## Environment Files
-
-```typescript
-// ConfigModule supports .env files
+// Environment files support
 ConfigModule.forRoot({
   envFilePath: [
     `.env.${process.env.NODE_ENV}.local`,
@@ -172,22 +156,12 @@ ConfigModule.forRoot({
 });
 
 // .env.development
-DB_HOST=localhost
-DB_PORT=5432
+// DB_HOST=localhost
+// DB_PORT=5432
 
 // .env.production
-DB_HOST=prod-db.example.com
-DB_PORT=5432
+// DB_HOST=prod-db.example.com
+// DB_PORT=5432
 ```
 
-## Why This Matters
-
-- **Fail fast**: Validation catches missing config at startup
-- **Type safety**: Prevents typos and type errors
-- **Testability**: Easy to mock configuration in tests
-- **Organization**: Namespaced config scales with app complexity
-
-## Reference
-
-- [NestJS Configuration](https://docs.nestjs.com/techniques/configuration)
-- [Configuration Namespaces](https://docs.nestjs.com/techniques/configuration#configuration-namespaces)
+Reference: [NestJS Configuration](https://docs.nestjs.com/techniques/configuration)

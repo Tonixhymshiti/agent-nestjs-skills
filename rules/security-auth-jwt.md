@@ -1,26 +1,18 @@
 ---
 title: Implement Secure JWT Authentication
 impact: CRITICAL
-impactDescription: Insecure auth implementation leads to unauthorized access
-tags:
-  - security
-  - authentication
-  - jwt
-  - passport
+impactDescription: Essential for secure APIs
+tags: security, jwt, authentication, tokens
 ---
 
-# Implement Secure JWT Authentication
-
-**Impact: CRITICAL** - Proper JWT implementation is essential for secure APIs
-
-## Explanation
+## Implement Secure JWT Authentication
 
 Use `@nestjs/jwt` with `@nestjs/passport` for authentication. Store secrets securely, use appropriate token lifetimes, implement refresh tokens, and validate tokens properly. Never expose sensitive data in JWT payloads.
 
-## Incorrect
+**Incorrect (insecure JWT implementation):**
 
 ```typescript
-// DON'T: Hardcode secrets
+// Hardcode secrets
 @Module({
   imports: [
     JwtModule.register({
@@ -31,7 +23,7 @@ Use `@nestjs/jwt` with `@nestjs/passport` for authentication. Store secrets secu
 })
 export class AuthModule {}
 
-// DON'T: Store sensitive data in JWT
+// Store sensitive data in JWT
 async login(user: User): Promise<{ accessToken: string }> {
   const payload = {
     sub: user.id,
@@ -43,14 +35,13 @@ async login(user: User): Promise<{ accessToken: string }> {
   return { accessToken: this.jwtService.sign(payload) };
 }
 
-// DON'T: Skip token validation
+// Skip token validation
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: 'my-secret',
-      // ignoreExpiration: true, // NEVER ignore expiration!
     });
   }
 
@@ -60,7 +51,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-## Correct
+**Correct (secure JWT with refresh tokens):**
 
 ```typescript
 // Secure JWT configuration
@@ -152,88 +143,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-## Refresh Token Flow
-
-```typescript
-@Controller('auth')
-export class AuthController {
-  @Post('refresh')
-  async refresh(@Body() dto: RefreshTokenDto): Promise<TokenResponse> {
-    // Find stored refresh token
-    const storedToken = await this.refreshTokenRepo.findOne({
-      where: { userId: dto.userId },
-    });
-
-    if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    // Verify token matches
-    const isValid = await bcrypt.compare(dto.refreshToken, storedToken.token);
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    // Generate new tokens (rotate refresh token)
-    const user = await this.usersService.findById(dto.userId);
-    await this.refreshTokenRepo.delete({ userId: dto.userId });
-
-    return this.authService.login(user);
-  }
-
-  @Post('logout')
-  @UseGuards(JwtAuthGuard)
-  async logout(@CurrentUser() user: User): Promise<void> {
-    // Invalidate refresh token
-    await this.refreshTokenRepo.delete({ userId: user.id });
-  }
-}
-```
-
-## Token Blacklisting
-
-```typescript
-// For immediate token invalidation
-@Injectable()
-export class TokenBlacklistService {
-  constructor(@InjectRedis() private redis: Redis) {}
-
-  async blacklist(token: string, expiresIn: number): Promise<void> {
-    const decoded = this.jwtService.decode(token) as JwtPayload;
-    const key = `blacklist:${decoded.jti || token}`;
-
-    await this.redis.setex(key, expiresIn, '1');
-  }
-
-  async isBlacklisted(token: string): Promise<boolean> {
-    const decoded = this.jwtService.decode(token) as JwtPayload;
-    const key = `blacklist:${decoded.jti || token}`;
-
-    return (await this.redis.exists(key)) === 1;
-  }
-}
-
-// Check blacklist in strategy
-async validate(payload: JwtPayload, done: Function): Promise<void> {
-  const token = this.request.headers.authorization?.split(' ')[1];
-
-  if (await this.blacklistService.isBlacklisted(token)) {
-    throw new UnauthorizedException('Token has been revoked');
-  }
-
-  const user = await this.usersService.findById(payload.sub);
-  done(null, user);
-}
-```
-
-## Why This Matters
-
-- **Unauthorized access**: Weak auth exposes all protected resources
-- **Token theft**: Long-lived tokens increase risk window
-- **Data exposure**: Sensitive data in JWT is visible to anyone
-- **Compliance**: OWASP requires proper authentication
-
-## Reference
-
-- [NestJS Authentication](https://docs.nestjs.com/security/authentication)
-- [JWT Best Practices](https://auth0.com/blog/a-look-at-the-latest-draft-for-jwt-bcp/)
+Reference: [NestJS Authentication](https://docs.nestjs.com/security/authentication)

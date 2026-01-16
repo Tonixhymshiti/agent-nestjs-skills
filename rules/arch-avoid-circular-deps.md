@@ -1,23 +1,15 @@
 ---
 title: Avoid Circular Dependencies
 impact: CRITICAL
-impactDescription: Prevents runtime crashes and unpredictable behavior
-tags:
-  - architecture
-  - modules
-  - dependencies
-  - circular
+impactDescription: "#1 cause of runtime crashes"
+tags: architecture, modules, dependencies
 ---
 
-# Avoid Circular Dependencies
+## Avoid Circular Dependencies
 
-**Impact: CRITICAL** - Circular dependencies cause undefined behavior and runtime errors
+Circular dependencies occur when Module A imports Module B, and Module B imports Module A (directly or transitively). NestJS can sometimes resolve these through forward references, but they indicate architectural problems and should be avoided. This is the #1 cause of runtime crashes in NestJS applications.
 
-## Explanation
-
-Circular dependencies occur when Module A imports Module B, and Module B imports Module A (directly or transitively). NestJS can sometimes resolve these through forward references, but they indicate architectural problems and should be avoided.
-
-## Incorrect
+**Incorrect (circular module imports):**
 
 ```typescript
 // users.module.ts
@@ -37,7 +29,7 @@ export class UsersModule {}
 export class OrdersModule {}
 ```
 
-## Correct
+**Correct (extract shared logic or use events):**
 
 ```typescript
 // Option 1: Extract shared logic to a third module
@@ -85,14 +77,4 @@ export class OrdersService {
 }
 ```
 
-## Why This Matters
-
-- **Runtime crashes**: Circular dependencies can cause `undefined` errors at runtime
-- **Testing difficulty**: Circular deps make unit testing nearly impossible
-- **Maintenance nightmare**: Tightly coupled modules are hard to change independently
-- **Build issues**: Some bundlers fail with circular dependencies
-
-## Reference
-
-- [NestJS Circular Dependency](https://docs.nestjs.com/fundamentals/circular-dependency)
-- [Forward Reference](https://docs.nestjs.com/fundamentals/circular-dependency#forward-reference)
+Reference: [NestJS Circular Dependency](https://docs.nestjs.com/fundamentals/circular-dependency)

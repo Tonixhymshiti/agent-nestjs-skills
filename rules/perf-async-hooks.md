@@ -1,26 +1,18 @@
 ---
 title: Use Async Lifecycle Hooks Correctly
 impact: HIGH
-impactDescription: Prevents blocking and ensures proper initialization order
-tags:
-  - performance
-  - lifecycle
-  - async
-  - initialization
+impactDescription: Improper async handling blocks application startup
+tags: performance, lifecycle, async, hooks
 ---
 
-# Use Async Lifecycle Hooks Correctly
-
-**Impact: HIGH** - Improper async handling blocks application startup
-
-## Explanation
+## Use Async Lifecycle Hooks Correctly
 
 NestJS lifecycle hooks (`onModuleInit`, `onApplicationBootstrap`, etc.) support async operations. However, misusing them can block application startup or cause race conditions. Understand the lifecycle order and use hooks appropriately.
 
-## Incorrect
+**Incorrect (fire-and-forget async without await):**
 
 ```typescript
-// DON'T: Fire-and-forget async without await
+// Fire-and-forget async without await
 @Injectable()
 export class DatabaseService implements OnModuleInit {
   onModuleInit() {
@@ -34,7 +26,7 @@ export class DatabaseService implements OnModuleInit {
   }
 }
 
-// DON'T: Heavy blocking operations in constructor
+// Heavy blocking operations in constructor
 @Injectable()
 export class ConfigService {
   private config: Config;
@@ -46,10 +38,10 @@ export class ConfigService {
 }
 ```
 
-## Correct
+**Correct (return promises from async hooks):**
 
 ```typescript
-// DO: Return promise from async hooks
+// Return promise from async hooks
 @Injectable()
 export class DatabaseService implements OnModuleInit {
   private pool: Pool;
@@ -67,7 +59,7 @@ export class DatabaseService implements OnModuleInit {
   }
 }
 
-// DO: Use onApplicationBootstrap for cross-module dependencies
+// Use onApplicationBootstrap for cross-module dependencies
 @Injectable()
 export class CacheWarmerService implements OnApplicationBootstrap {
   constructor(
@@ -82,7 +74,7 @@ export class CacheWarmerService implements OnApplicationBootstrap {
   }
 }
 
-// DO: Heavy init in async hooks, not constructor
+// Heavy init in async hooks, not constructor
 @Injectable()
 export class ConfigService implements OnModuleInit {
   private config: Config;
@@ -105,52 +97,8 @@ export class ConfigService implements OnModuleInit {
     return this.config[key];
   }
 }
-```
 
-## Lifecycle Hook Order
-
-```typescript
-// Understanding the order prevents race conditions
-@Injectable()
-export class MyService implements
-  OnModuleInit,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-  BeforeApplicationShutdown {
-
-  // 1. Constructor - Sync only, dependencies injected
-  constructor(private dep: SomeDependency) {}
-
-  // 2. OnModuleInit - Called after module's providers are instantiated
-  // Dependencies in SAME module are available
-  async onModuleInit() {
-    console.log('Module init - can use same-module deps');
-  }
-
-  // 3. OnApplicationBootstrap - Called after ALL modules are initialized
-  // Safe to use cross-module dependencies
-  async onApplicationBootstrap() {
-    console.log('App bootstrap - all deps available');
-  }
-
-  // 4. BeforeApplicationShutdown - Called on SIGTERM/SIGINT
-  // HTTP server still running, can finish requests
-  async beforeApplicationShutdown(signal?: string) {
-    console.log('Shutdown signal:', signal);
-  }
-
-  // 5. OnModuleDestroy - Called after beforeApplicationShutdown
-  // Clean up resources
-  async onModuleDestroy() {
-    console.log('Destroying - cleanup time');
-  }
-}
-```
-
-## Enable Shutdown Hooks
-
-```typescript
-// main.ts - Required for shutdown hooks to work
+// Enable shutdown hooks in main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks(); // Enable SIGTERM/SIGINT handling
@@ -158,14 +106,4 @@ async function bootstrap() {
 }
 ```
 
-## Why This Matters
-
-- **Reliability**: Ensures services are ready before handling requests
-- **Clean shutdown**: Proper resource cleanup prevents data loss
-- **Performance**: Non-blocking startup improves boot time
-- **Debugging**: Predictable order simplifies troubleshooting
-
-## Reference
-
-- [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
-- [Application Shutdown](https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown)
+Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)

@@ -1,26 +1,18 @@
 ---
 title: Implement Graceful Shutdown
 impact: MEDIUM-HIGH
-impactDescription: Graceful shutdown prevents data loss and connection issues during deployments
-tags:
-  - devops
-  - shutdown
-  - lifecycle
-  - deployment
+impactDescription: Proper shutdown handling ensures zero-downtime deployments
+tags: devops, graceful-shutdown, lifecycle, kubernetes
 ---
 
-# Implement Graceful Shutdown
-
-**Impact: MEDIUM-HIGH** - Proper shutdown handling ensures zero-downtime deployments
-
-## Explanation
+## Implement Graceful Shutdown
 
 Handle SIGTERM and SIGINT signals to gracefully shutdown your NestJS application. Stop accepting new requests, wait for in-flight requests to complete, close database connections, and clean up resources. This prevents data loss and connection errors during deployments.
 
-## Incorrect
+**Incorrect (ignoring shutdown signals):**
 
 ```typescript
-// DON'T: Ignore shutdown signals
+// Ignore shutdown signals
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   await app.listen(3000);
@@ -29,7 +21,7 @@ async function bootstrap() {
   // Database connections are abruptly closed
 }
 
-// DON'T: Long-running tasks without cancellation
+// Long-running tasks without cancellation
 @Injectable()
 export class ProcessingService {
   async processLargeFile(file: File): Promise<void> {
@@ -42,7 +34,7 @@ export class ProcessingService {
 }
 ```
 
-## Correct
+**Correct (enable shutdown hooks and handle cleanup):**
 
 ```typescript
 // Enable shutdown hooks in main.ts
@@ -77,12 +69,8 @@ async function bootstrap() {
     });
   });
 }
-```
 
-## Lifecycle Hooks for Cleanup
-
-```typescript
-// Service with cleanup on shutdown
+// Lifecycle hooks for cleanup
 @Injectable()
 export class DatabaseService implements OnApplicationShutdown {
   private readonly connections: Connection[] = [];
@@ -135,12 +123,8 @@ export class EventsGateway implements OnApplicationShutdown {
     this.server.disconnectSockets();
   }
 }
-```
 
-## Health Check Integration
-
-```typescript
-// Report unhealthy during shutdown
+// Health check integration
 @Injectable()
 export class ShutdownService {
   private isShuttingDown = false;
@@ -187,12 +171,8 @@ export class AppShutdownService implements OnApplicationShutdown {
     // Then proceed with cleanup
   }
 }
-```
 
-## Request Tracking for In-Flight Requests
-
-```typescript
-// Track and wait for in-flight requests
+// Request tracking for in-flight requests
 @Injectable()
 export class RequestTracker implements NestMiddleware, OnApplicationShutdown {
   private activeRequests = 0;
@@ -239,14 +219,4 @@ export class RequestTracker implements NestMiddleware, OnApplicationShutdown {
 }
 ```
 
-## Why This Matters
-
-- **Zero downtime**: Rolling deployments without dropped requests
-- **Data integrity**: Transactions complete properly
-- **Resource cleanup**: No connection leaks or orphaned processes
-- **User experience**: No failed requests during deploys
-
-## Reference
-
-- [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)
-- [Kubernetes Graceful Shutdown](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination)
+Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecycle-events)

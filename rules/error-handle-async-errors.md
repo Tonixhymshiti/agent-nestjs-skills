@@ -1,26 +1,18 @@
 ---
 title: Handle Async Errors Properly
 impact: HIGH
-impactDescription: Unhandled async errors crash the application
-tags:
-  - error-handling
-  - async
-  - promises
-  - observables
+impactDescription: Prevents process crashes from unhandled rejections
+tags: error-handling, async, promises
 ---
 
-# Handle Async Errors Properly
-
-**Impact: HIGH** - Unhandled promise rejections can crash your Node.js process
-
-## Explanation
+## Handle Async Errors Properly
 
 NestJS automatically catches errors from async route handlers, but errors from background tasks, event handlers, and manually created promises can crash your application. Always handle async errors explicitly and use global handlers as a safety net.
 
-## Incorrect
+**Incorrect (fire-and-forget without error handling):**
 
 ```typescript
-// DON'T: Fire-and-forget without error handling
+// Fire-and-forget without error handling
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -33,7 +25,7 @@ export class UsersService {
   }
 }
 
-// DON'T: Unhandled promise in event handler
+// Unhandled promise in event handler
 @Injectable()
 export class OrdersService {
   @OnEvent('order.created')
@@ -49,7 +41,7 @@ export class OrdersService {
   }
 }
 
-// DON'T: Missing try-catch in scheduled tasks
+// Missing try-catch in scheduled tasks
 @Cron('0 0 * * *')
 async dailyCleanup(): Promise<void> {
   await this.cleanupService.run();
@@ -57,7 +49,7 @@ async dailyCleanup(): Promise<void> {
 }
 ```
 
-## Correct
+**Correct (explicit async error handling):**
 
 ```typescript
 // Handle fire-and-forget with explicit catch
@@ -111,28 +103,18 @@ export class CleanupService {
     }
   }
 }
-```
 
-## Global Unhandled Rejection Handler
-
-```typescript
-// main.ts - Safety net for uncaught errors
+// Global unhandled rejection handler in main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // In production, you might want to:
-    // - Send to error tracking service
-    // - Gracefully shutdown
   });
 
-  // Handle uncaught exceptions
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error);
-    // Graceful shutdown recommended after uncaught exception
     process.exit(1);
   });
 
@@ -140,83 +122,4 @@ async function bootstrap() {
 }
 ```
 
-## RxJS Observable Error Handling
-
-```typescript
-// Handle errors in Observable streams
-@Injectable()
-export class StreamService {
-  private readonly logger = new Logger(StreamService.name);
-
-  processStream(data$: Observable<Data>): Observable<Result> {
-    return data$.pipe(
-      mergeMap((data) => this.process(data)),
-      catchError((error) => {
-        this.logger.error('Stream processing error', error);
-        // Return empty to continue stream, or rethrow
-        return EMPTY;
-      }),
-      retry({
-        count: 3,
-        delay: (error, retryCount) => {
-          this.logger.warn(`Retry attempt ${retryCount}`);
-          return timer(1000 * retryCount);
-        },
-      }),
-    );
-  }
-}
-
-// Microservice message handling
-@MessagePattern({ cmd: 'process' })
-async processMessage(data: ProcessDto): Promise<Result> {
-  try {
-    return await this.service.process(data);
-  } catch (error) {
-    // Transform to RpcException for proper client handling
-    throw new RpcException({
-      code: 'PROCESSING_ERROR',
-      message: error.message,
-    });
-  }
-}
-```
-
-## Async Context Preservation
-
-```typescript
-// Preserve context in async operations
-@Injectable()
-export class TrackedService {
-  constructor(private cls: ClsService) {}
-
-  async processWithTracking(data: Data): Promise<void> {
-    const requestId = this.cls.get('requestId');
-
-    // Background task with context
-    setImmediate(async () => {
-      try {
-        await this.backgroundProcess(data);
-      } catch (error) {
-        // Log with original request context
-        this.logger.error('Background task failed', {
-          requestId,
-          error: error.message,
-        });
-      }
-    });
-  }
-}
-```
-
-## Why This Matters
-
-- **Stability**: Unhandled rejections crash Node.js (Node 15+)
-- **Debugging**: Proper error handling preserves stack traces
-- **Reliability**: Prevents silent failures in background tasks
-- **Monitoring**: Enables proper error tracking and alerting
-
-## Reference
-
-- [Node.js Unhandled Rejections](https://nodejs.org/api/process.html#event-unhandledrejection)
-- [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
+Reference: [Node.js Unhandled Rejections](https://nodejs.org/api/process.html#event-unhandledrejection)

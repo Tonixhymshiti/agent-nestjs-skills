@@ -1,26 +1,18 @@
 ---
 title: Use API Versioning for Breaking Changes
 impact: MEDIUM
-impactDescription: Versioning enables backward-compatible API evolution
-tags:
-  - api
-  - versioning
-  - backward-compatibility
-  - breaking-changes
+impactDescription: Versioning allows you to evolve APIs without breaking existing clients
+tags: api, versioning, breaking-changes, compatibility
 ---
 
-# Use API Versioning for Breaking Changes
-
-**Impact: MEDIUM** - Versioning allows you to evolve APIs without breaking existing clients
-
-## Explanation
+## Use API Versioning for Breaking Changes
 
 Use NestJS built-in versioning when making breaking changes to your API. Choose a versioning strategy (URI, header, or media type) and apply it consistently. This allows old clients to continue working while new clients use updated endpoints.
 
-## Incorrect
+**Incorrect (breaking changes without versioning):**
 
 ```typescript
-// DON'T: Breaking changes without versioning
+// Breaking changes without versioning
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -32,7 +24,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Manual versioning in routes
+// Manual versioning in routes
 @Controller('v1/users')
 export class UsersV1Controller {}
 
@@ -41,7 +33,7 @@ export class UsersV2Controller {}
 // Inconsistent, error-prone, hard to maintain
 ```
 
-## Correct
+**Correct (use NestJS built-in versioning):**
 
 ```typescript
 // Enable versioning in main.ts
@@ -103,12 +95,8 @@ export class UsersV2Controller {
     };
   }
 }
-```
 
-## Per-Route Versioning
-
-```typescript
-// Different versions for different routes
+// Per-route versioning - different versions for different routes
 @Controller('users')
 export class UsersController {
   @Get()
@@ -135,12 +123,8 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 }
-```
 
-## Shared Service with Version-Specific Logic
-
-```typescript
-// Service handles version differences internally
+// Shared service with version-specific logic
 @Injectable()
 export class UsersService {
   async findOne(id: string, version: string): Promise<any> {
@@ -182,12 +166,8 @@ export class UsersController {
     return this.usersService.findOne(id, version);
   }
 }
-```
 
-## Deprecation Strategy
-
-```typescript
-// Mark old versions as deprecated
+// Deprecation strategy - mark old versions as deprecated
 @Controller('users')
 @Version('1')
 @UseInterceptors(DeprecationInterceptor)
@@ -208,14 +188,4 @@ export class DeprecationInterceptor implements NestInterceptor {
 }
 ```
 
-## Why This Matters
-
-- **Backward compatibility**: Existing clients continue working
-- **Gradual migration**: Clients upgrade on their schedule
-- **Clear contracts**: Each version has documented behavior
-- **Safe evolution**: Make breaking changes without breaking clients
-
-## Reference
-
-- [NestJS Versioning](https://docs.nestjs.com/techniques/versioning)
-- [API Versioning Best Practices](https://www.mnot.net/blog/2012/12/04/api-evolution)
+Reference: [NestJS Versioning](https://docs.nestjs.com/techniques/versioning)

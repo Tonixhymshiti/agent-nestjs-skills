@@ -26,33 +26,12 @@ This skillset contains **37 rules** across **10 categories**, covering everythin
 | 9 | Microservices | MEDIUM | 3 |
 | 10 | DevOps & Deployment | LOW-MEDIUM | 3 |
 
-## Installation
-
-### Claude Code
-
-Add this skill to your Claude Code configuration:
-
-```bash
-# Clone to your skills directory
-git clone https://github.com/YOUR_USERNAME/nestjs-best-practices-skill.git ~/.claude/skills/nestjs-best-practices
-```
-
-Or reference it in your project's `.claude/settings.json`:
-
-```json
-{
-  "skills": [
-    "https://github.com/YOUR_USERNAME/nestjs-best-practices-skill"
-  ]
-}
-```
-
 ## Structure
 
 ```
 nestjs-best-practices-skill/
 ├── SKILL.md              # Main entry point for Claude Code
-├── AGENTS.md             # Consolidated rules document (192KB)
+├── AGENTS.md             # Consolidated rules document (generated)
 ├── metadata.json         # Version and metadata
 ├── rules/                # Individual rule files
 │   ├── _sections.md      # Category definitions
@@ -73,6 +52,17 @@ nestjs-best-practices-skill/
     └── package.json      # NPM config
 ```
 
+## Workflow
+
+The repository uses a prefix-based naming system where filenames indicate their section:
+
+- `arch-` rules address Architecture patterns
+- `di-` rules focus on Dependency Injection
+- `security-` rules cover Security best practices
+- `perf-` rules handle Performance optimization
+
+Rules are automatically sorted alphabetically within each section when building `AGENTS.md`.
+
 ## Building
 
 To regenerate `AGENTS.md` after modifying rules:
@@ -91,30 +81,46 @@ Or use the shell wrapper:
 ## Adding New Rules
 
 1. Copy `rules/_template.md` to a new file with the appropriate prefix
-2. Fill in the frontmatter and content
+2. Fill in the frontmatter and content following the template structure
 3. Run the build script to regenerate `AGENTS.md`
 
-### Naming Convention
+### Rule Structure
 
-Rules are automatically categorized by filename prefix:
+Each rule follows this format:
 
-- `arch-` - Architecture
-- `di-` - Dependency Injection
-- `error-` - Error Handling
-- `security-` - Security
-- `perf-` - Performance
-- `test-` - Testing
-- `db-` - Database
-- `api-` - API Design
-- `micro-` - Microservices
-- `devops-` - DevOps
+```markdown
+---
+title: Rule Title Here
+impact: MEDIUM
+impactDescription: Brief description of impact
+tags: tag1, tag2, tag3
+---
 
-## References
+## Rule Title Here
 
-- [NestJS Official Documentation](https://docs.nestjs.com/)
-- [NestJS GitHub Repository](https://github.com/nestjs/nest)
-- [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)
+Brief explanation of the rule and why it matters.
 
-## License
+**Incorrect (description of what's wrong):**
 
-MIT
+\`\`\`typescript
+// Bad code example here
+\`\`\`
+
+**Correct (description of what's right):**
+
+\`\`\`typescript
+// Good code example here
+\`\`\`
+
+Reference: [NestJS Documentation](https://docs.nestjs.com)
+```
+
+## Impact Classification
+
+| Level | Description |
+|-------|-------------|
+| CRITICAL | Violations cause runtime errors, security vulnerabilities, or architectural breakdown |
+| HIGH | Significant impact on reliability, security, or maintainability |
+| MEDIUM-HIGH | Notable impact on quality and developer experience |
+| MEDIUM | Moderate impact on code quality and best practices |
+| LOW-MEDIUM | Minor improvements for consistency and maintainability |

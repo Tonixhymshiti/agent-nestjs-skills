@@ -1,26 +1,18 @@
 ---
 title: Use DTOs and Serialization for API Responses
 impact: MEDIUM
-impactDescription: Prevents data leaks and ensures consistent API contracts
-tags:
-  - api
-  - dto
-  - serialization
-  - class-transformer
+impactDescription: Response DTOs prevent accidental data exposure and ensure consistency
+tags: api, dto, serialization, class-transformer
 ---
 
-# Use DTOs and Serialization for API Responses
-
-**Impact: MEDIUM** - Response DTOs prevent accidental data exposure and ensure consistency
-
-## Explanation
+## Use DTOs and Serialization for API Responses
 
 Never return entity objects directly from controllers. Use response DTOs with class-transformer's `@Exclude()` and `@Expose()` decorators to control exactly what data is sent to clients. This prevents accidental exposure of sensitive fields and provides a stable API contract.
 
-## Incorrect
+**Incorrect (returning entities directly or manual spreading):**
 
 ```typescript
-// DON'T: Return entities directly
+// Return entities directly
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -31,7 +23,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Manual object spreading (error-prone)
+// Manual object spreading (error-prone)
 @Get(':id')
 async findOne(@Param('id') id: string) {
   const user = await this.usersService.findById(id);
@@ -45,7 +37,7 @@ async findOne(@Param('id') id: string) {
 }
 ```
 
-## Correct
+**Correct (use class-transformer with @Exclude and response DTOs):**
 
 ```typescript
 // Enable class-transformer globally
@@ -145,12 +137,8 @@ export class UsersController {
     });
   }
 }
-```
 
-## Groups for Conditional Serialization
-
-```typescript
-// Different response shapes for different contexts
+// Groups for conditional serialization
 export class UserDto {
   @Expose()
   id: string;
@@ -191,14 +179,4 @@ export class UsersController {
 }
 ```
 
-## Why This Matters
-
-- **Security**: Prevents accidental exposure of sensitive data
-- **API stability**: DTOs provide stable contracts regardless of entity changes
-- **Flexibility**: Different response shapes for different consumers
-- **Documentation**: DTOs serve as response schema documentation
-
-## Reference
-
-- [NestJS Serialization](https://docs.nestjs.com/techniques/serialization)
-- [class-transformer](https://github.com/typestack/class-transformer)
+Reference: [NestJS Serialization](https://docs.nestjs.com/techniques/serialization)

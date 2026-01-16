@@ -1,27 +1,18 @@
 ---
 title: Use Guards for Authentication and Authorization
 impact: HIGH
-impactDescription: Centralized access control prevents security gaps
-tags:
-  - security
-  - guards
-  - authentication
-  - authorization
-  - rbac
+impactDescription: Enforces access control before handlers execute
+tags: security, guards, authentication, authorization
 ---
 
-# Use Guards for Authentication and Authorization
-
-**Impact: HIGH** - Guards enforce access control before handlers execute
-
-## Explanation
+## Use Guards for Authentication and Authorization
 
 Guards determine whether a request should be handled based on authentication state, roles, permissions, or other conditions. They run after middleware but before pipes and interceptors, making them ideal for access control. Use guards instead of manual checks in controllers.
 
-## Incorrect
+**Incorrect (manual auth checks in every handler):**
 
 ```typescript
-// DON'T: Manual auth checks in every handler
+// Manual auth checks in every handler
 @Controller('admin')
 export class AdminController {
   @Get('users')
@@ -48,7 +39,7 @@ export class AdminController {
 }
 ```
 
-## Correct
+**Correct (guards with declarative decorators):**
 
 ```typescript
 // JWT Auth Guard
@@ -141,47 +132,4 @@ export class AdminController {
 }
 ```
 
-## Policy-Based Authorization (CASL)
-
-```typescript
-// For complex permissions, use CASL
-@Injectable()
-export class PoliciesGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    private caslAbilityFactory: CaslAbilityFactory,
-  ) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const policies = this.reflector.get<PolicyHandler[]>(
-      'check_policies',
-      context.getHandler(),
-    );
-    if (!policies) return true;
-
-    const { user } = context.switchToHttp().getRequest();
-    const ability = this.caslAbilityFactory.createForUser(user);
-
-    return policies.every((policy) => policy(ability));
-  }
-}
-
-// Usage
-@Get(':id')
-@CheckPolicies((ability) => ability.can(Action.Read, Article))
-async findOne(@Param('id') id: string) {
-  return this.articlesService.findOne(id);
-}
-```
-
-## Why This Matters
-
-- **DRY**: Auth logic defined once, applied everywhere
-- **Security**: Guarantees checks run before business logic
-- **Composability**: Combine multiple guards for complex rules
-- **Clarity**: Controllers focus on business logic
-
-## Reference
-
-- [NestJS Guards](https://docs.nestjs.com/guards)
-- [CASL Integration](https://docs.nestjs.com/security/authorization#integrating-casl)
+Reference: [NestJS Guards](https://docs.nestjs.com/guards)

@@ -1,27 +1,18 @@
 ---
 title: Validate All Input with DTOs and Pipes
 impact: HIGH
-impactDescription: Prevents injection attacks and data corruption
-tags:
-  - security
-  - validation
-  - dto
-  - pipes
-  - class-validator
+impactDescription: First line of defense against attacks
+tags: security, validation, dto, pipes
 ---
 
-# Validate All Input with DTOs and Pipes
-
-**Impact: HIGH** - Input validation is your first line of defense against attacks
-
-## Explanation
+## Validate All Input with DTOs and Pipes
 
 Always validate incoming data using class-validator decorators on DTOs and the global ValidationPipe. Never trust user input. Validate all request bodies, query parameters, and route parameters before processing.
 
-## Incorrect
+**Incorrect (trust raw input without validation):**
 
 ```typescript
-// DON'T: Trust raw input without validation
+// Trust raw input without validation
 @Controller('users')
 export class UsersController {
   @Post()
@@ -37,7 +28,7 @@ export class UsersController {
   }
 }
 
-// DON'T: DTOs without validation decorators
+// DTOs without validation decorators
 export class CreateUserDto {
   name: string;    // No validation
   email: string;   // Could be "not-an-email"
@@ -45,7 +36,7 @@ export class CreateUserDto {
 }
 ```
 
-## Correct
+**Correct (validated DTOs with global ValidationPipe):**
 
 ```typescript
 // Enable ValidationPipe globally in main.ts
@@ -156,45 +147,4 @@ export class UsersController {
 }
 ```
 
-## Custom Validators
-
-```typescript
-// Custom decorator for complex validation
-import { registerDecorator, ValidationOptions } from 'class-validator';
-
-export function IsStrongPassword(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
-    registerDecorator({
-      name: 'isStrongPassword',
-      target: object.constructor,
-      propertyName: propertyName,
-      options: validationOptions,
-      validator: {
-        validate(value: any) {
-          const hasUppercase = /[A-Z]/.test(value);
-          const hasLowercase = /[a-z]/.test(value);
-          const hasNumber = /\d/.test(value);
-          const hasSpecial = /[!@#$%^&*]/.test(value);
-          return hasUppercase && hasLowercase && hasNumber && hasSpecial;
-        },
-        defaultMessage() {
-          return 'Password must contain uppercase, lowercase, number, and special character';
-        },
-      },
-    });
-  };
-}
-```
-
-## Why This Matters
-
-- **Security**: Prevents SQL injection, XSS, and other injection attacks
-- **Data integrity**: Ensures data meets business requirements
-- **Type safety**: Transforms strings to proper types
-- **Clear contracts**: DTOs document expected input format
-
-## Reference
-
-- [NestJS Validation](https://docs.nestjs.com/techniques/validation)
-- [class-validator](https://github.com/typestack/class-validator)
-- [class-transformer](https://github.com/typestack/class-transformer)
+Reference: [NestJS Validation](https://docs.nestjs.com/techniques/validation)

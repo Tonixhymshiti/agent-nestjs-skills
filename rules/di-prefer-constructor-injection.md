@@ -1,23 +1,15 @@
 ---
 title: Prefer Constructor Injection
 impact: CRITICAL
-impactDescription: Required for proper DI, testing, and TypeScript support
-tags:
-  - dependency-injection
-  - providers
-  - testing
-  - typescript
+impactDescription: Required for proper DI and testing
+tags: dependency-injection, constructor, testing
 ---
 
-# Prefer Constructor Injection
+## Prefer Constructor Injection
 
-**Impact: CRITICAL** - Constructor injection is the primary pattern for NestJS DI
+Always use constructor injection over property injection. Constructor injection makes dependencies explicit, enables TypeScript type checking, ensures dependencies are available when the class is instantiated, and improves testability. This is required for proper DI, testing, and TypeScript support.
 
-## Explanation
-
-Always use constructor injection over property injection. Constructor injection makes dependencies explicit, enables TypeScript type checking, ensures dependencies are available when the class is instantiated, and improves testability.
-
-## Incorrect
+**Incorrect (property injection with hidden dependencies):**
 
 ```typescript
 // Property injection - avoid unless necessary
@@ -40,7 +32,7 @@ export class UsersService {
 // 3. TypeScript can't enforce dependency types at instantiation
 ```
 
-## Correct
+**Correct (constructor injection with explicit dependencies):**
 
 ```typescript
 // Constructor injection - explicit and testable
@@ -76,13 +68,8 @@ describe('UsersService', () => {
     expect(result).toHaveLength(1);
   });
 });
-```
 
-## When Property Injection is Acceptable
-
-```typescript
 // Only use property injection for optional dependencies
-// or to break circular dependencies (rare)
 @Injectable()
 export class LoggingService {
   @Optional()
@@ -96,15 +83,4 @@ export class LoggingService {
 }
 ```
 
-## Why This Matters
-
-- **Explicit dependencies**: Constructor shows all requirements
-- **Type safety**: TypeScript validates dependencies at compile time
-- **Testability**: Easy to provide mocks in unit tests
-- **Immutability**: `readonly` prevents accidental reassignment
-- **Initialization order**: Dependencies guaranteed available
-
-## Reference
-
-- [NestJS Providers](https://docs.nestjs.com/providers)
-- [Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
+Reference: [NestJS Providers](https://docs.nestjs.com/providers)

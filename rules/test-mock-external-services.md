@@ -1,26 +1,18 @@
 ---
 title: Mock External Services in Tests
-impact: MEDIUM-HIGH
-impactDescription: External dependencies make tests slow, flaky, and expensive
-tags:
-  - testing
-  - mocking
-  - external-services
-  - isolation
+impact: HIGH
+impactDescription: Ensures fast, reliable, deterministic tests
+tags: testing, mocking, external-services, jest
 ---
 
-# Mock External Services in Tests
-
-**Impact: MEDIUM-HIGH** - Mocking external services ensures fast, reliable tests
-
-## Explanation
+## Mock External Services in Tests
 
 Never call real external services (APIs, databases, message queues) in unit tests. Mock them to ensure tests are fast, deterministic, and don't incur costs. Use realistic mock data and test edge cases like timeouts and errors.
 
-## Incorrect
+**Incorrect (calling real APIs and databases):**
 
 ```typescript
-// DON'T: Call real APIs in tests
+// Call real APIs in tests
 describe('PaymentService', () => {
   it('should process payment', async () => {
     const service = new PaymentService(new StripeClient(realApiKey));
@@ -30,7 +22,7 @@ describe('PaymentService', () => {
   });
 });
 
-// DON'T: Use real database
+// Use real database
 describe('UsersService', () => {
   beforeEach(async () => {
     await connection.query('DELETE FROM users'); // Modifies real DB
@@ -42,14 +34,14 @@ describe('UsersService', () => {
   });
 });
 
-// DON'T: Incomplete mocks
+// Incomplete mocks
 const mockHttpService = {
   get: jest.fn().mockResolvedValue({ data: {} }),
   // Missing error scenarios, missing other methods
 };
 ```
 
-## Correct
+**Correct (mock all external dependencies):**
 
 ```typescript
 // Mock HTTP service properly
@@ -89,9 +81,6 @@ describe('WeatherService', () => {
     const result = await service.getWeather('NYC');
 
     expect(result).toEqual({ temperature: 72, humidity: 45 });
-    expect(httpService.get).toHaveBeenCalledWith(
-      expect.stringContaining('NYC'),
-    );
   });
 
   it('should handle API timeout', async () => {
@@ -112,11 +101,7 @@ describe('WeatherService', () => {
     await expect(service.getWeather('NYC')).rejects.toThrow(TooManyRequestsException);
   });
 });
-```
 
-## Mock Database with Repository Pattern
-
-```typescript
 // Mock repository instead of database
 describe('UsersService', () => {
   let service: UsersService;
@@ -151,18 +136,8 @@ describe('UsersService', () => {
     expect(result).toEqual(mockUser);
     expect(repo.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
   });
-
-  it('should throw NotFoundException for missing user', async () => {
-    repo.findOne.mockResolvedValue(null);
-
-    await expect(service.findById('999')).rejects.toThrow(NotFoundException);
-  });
 });
-```
 
-## Mock Third-Party SDKs
-
-```typescript
 // Create mock factory for complex SDKs
 function createMockStripe(): jest.Mocked<Stripe> {
   return {
@@ -176,63 +151,10 @@ function createMockStripe(): jest.Mocked<Stripe> {
       create: jest.fn(),
       retrieve: jest.fn(),
     },
-    refunds: {
-      create: jest.fn(),
-    },
   } as any;
 }
 
-describe('PaymentService', () => {
-  let service: PaymentService;
-  let stripe: jest.Mocked<Stripe>;
-
-  beforeEach(async () => {
-    stripe = createMockStripe();
-
-    const module = await Test.createTestingModule({
-      providers: [
-        PaymentService,
-        { provide: STRIPE_CLIENT, useValue: stripe },
-      ],
-    }).compile();
-
-    service = module.get(PaymentService);
-  });
-
-  it('should create payment intent', async () => {
-    stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_123',
-      status: 'requires_payment_method',
-      client_secret: 'secret_123',
-    } as any);
-
-    const result = await service.createPayment(1000, 'usd');
-
-    expect(result.clientSecret).toBe('secret_123');
-    expect(stripe.paymentIntents.create).toHaveBeenCalledWith({
-      amount: 1000,
-      currency: 'usd',
-    });
-  });
-
-  it('should handle card declined', async () => {
-    stripe.paymentIntents.create.mockRejectedValue({
-      type: 'StripeCardError',
-      code: 'card_declined',
-      message: 'Your card was declined',
-    });
-
-    await expect(service.createPayment(1000, 'usd')).rejects.toThrow(
-      BadRequestException,
-    );
-  });
-});
-```
-
-## Mock Time and Random Values
-
-```typescript
-// Mock Date for time-dependent tests
+// Mock time for time-dependent tests
 describe('TokenService', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -252,21 +174,6 @@ describe('TokenService', () => {
     expect(await service.isValid(token)).toBe(false);
   });
 });
-
-// Mock random/UUID for deterministic tests
-jest.mock('crypto', () => ({
-  randomUUID: jest.fn().mockReturnValue('mock-uuid-123'),
-}));
 ```
 
-## Why This Matters
-
-- **Speed**: Mocked tests run in milliseconds
-- **Reliability**: No network flakiness or service outages
-- **Cost**: No API call charges in CI/CD
-- **Isolation**: Test your code, not external services
-
-## Reference
-
-- [Jest Mocking](https://jestjs.io/docs/mock-functions)
-- [NestJS Testing](https://docs.nestjs.com/fundamentals/testing)
+Reference: [Jest Mocking](https://jestjs.io/docs/mock-functions)

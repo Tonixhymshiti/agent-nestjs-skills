@@ -1,42 +1,26 @@
 ---
-title: Rule Title
-impact: CRITICAL | HIGH | MEDIUM | LOW
-impactDescription: Optional quantified benefit (e.g., "50% fewer circular dependency errors")
-tags:
-  - primary-category
-  - secondary-category
-  - relevant-keywords
+title: Rule Title Here
+impact: MEDIUM
+impactDescription: Optional description of impact (e.g., "20-50% improvement")
+tags: tag1, tag2
 ---
 
-# Rule Title
+## Rule Title Here
 
-**Impact: [LEVEL]** [Optional: brief impact description]
+Brief explanation of the rule and why it matters. This should be clear and concise, explaining the performance implications.
 
-## Explanation
-
-A clear, concise explanation of why this rule matters and when it applies. Focus on the "why" behind the rule, not just the "what."
-
-## Incorrect
+**Incorrect (description of what's wrong):**
 
 ```typescript
-// Example of the problematic pattern
-// Include comments explaining what's wrong
+// Bad code example here
+const bad = example()
 ```
 
-## Correct
+**Correct (description of what's right):**
 
 ```typescript
-// Example of the recommended approach
-// Include comments explaining the improvement
+// Good code example here
+const good = example()
 ```
 
-## Why This Matters
-
-Brief explanation of consequences:
-- What problems the incorrect pattern causes
-- What benefits the correct pattern provides
-
-## Reference
-
-- [Official Documentation Link](https://docs.nestjs.com/relevant-section)
-- [Additional Resources](https://example.com)
+Reference: [NestJS Documentation](https://docs.nestjs.com)

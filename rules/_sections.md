@@ -1,55 +1,56 @@
-# NestJS Best Practices Sections
+# Sections
 
-Rules are automatically categorized based on their filename prefix. Rules within each section are sorted alphabetically.
+This file defines all sections, their ordering, impact levels, and descriptions.
+The section ID (in parentheses) is the filename prefix used to group rules.
 
-## Section Definitions
+---
 
-### 1. Architecture (arch-)
-**Impact: CRITICAL**
+## 1. Architecture (arch)
 
-Proper module organization and dependency management are the foundation of maintainable NestJS applications. Poor architecture leads to circular dependencies, tight coupling, and unmaintainable codebases.
+**Impact:** CRITICAL
+**Description:** Proper module organization and dependency management are the foundation of maintainable NestJS applications.
 
-### 2. Dependency Injection (di-)
-**Impact: CRITICAL**
+## 2. Dependency Injection (di)
 
-NestJS's IoC container is powerful but can be misused. Understanding provider scopes, custom providers, and injection patterns is essential for building scalable applications.
+**Impact:** CRITICAL
+**Description:** NestJS's IoC container is powerful but can be misused. Understanding scopes and injection patterns is essential.
 
-### 3. Error Handling (error-)
-**Impact: HIGH**
+## 3. Error Handling (error)
 
-Consistent error handling improves debugging, user experience, and API reliability. NestJS provides exception filters and built-in exceptions that should be used correctly.
+**Impact:** HIGH
+**Description:** Consistent error handling improves debugging, user experience, and API reliability.
 
-### 4. Security (security-)
-**Impact: HIGH**
+## 4. Security (security)
 
-Security vulnerabilities can be catastrophic. Following security best practices for authentication, authorization, input validation, and data protection is non-negotiable.
+**Impact:** HIGH
+**Description:** Security vulnerabilities can be catastrophic. Input validation, authentication, and data protection are non-negotiable.
 
-### 5. Performance (perf-)
-**Impact: HIGH**
+## 5. Performance (perf)
 
-Optimizing request handling, caching, database queries, and async operations directly impacts application responsiveness and scalability.
+**Impact:** HIGH
+**Description:** Optimizing request handling, caching, and database queries directly impacts application responsiveness.
 
-### 6. Testing (test-)
-**Impact: MEDIUM-HIGH**
+## 6. Testing (test)
 
-Well-tested applications are more reliable and easier to maintain. Understanding NestJS testing utilities and patterns ensures comprehensive test coverage.
+**Impact:** MEDIUM-HIGH
+**Description:** Well-tested applications are more reliable. Understanding NestJS testing utilities ensures comprehensive coverage.
 
-### 7. Database & ORM (db-)
-**Impact: MEDIUM-HIGH**
+## 7. Database & ORM (db)
 
-Proper database access patterns, connection management, and query optimization are crucial for data-intensive applications.
+**Impact:** MEDIUM-HIGH
+**Description:** Proper database access patterns and query optimization are crucial for data-intensive applications.
 
-### 8. API Design (api-)
-**Impact: MEDIUM**
+## 8. API Design (api)
 
-RESTful conventions, versioning, documentation, and consistent response formats improve API usability and maintainability.
+**Impact:** MEDIUM
+**Description:** RESTful conventions, versioning, and consistent response formats improve API usability.
 
-### 9. Microservices (micro-)
-**Impact: MEDIUM**
+## 9. Microservices (micro)
 
-Building distributed systems requires understanding message patterns, transport layers, and inter-service communication.
+**Impact:** MEDIUM
+**Description:** Building distributed systems requires understanding message patterns and inter-service communication.
 
-### 10. DevOps & Deployment (devops-)
-**Impact: LOW-MEDIUM**
+## 10. DevOps & Deployment (devops)
 
-Configuration management, logging, health checks, and deployment strategies ensure production readiness.
+**Impact:** LOW-MEDIUM
+**Description:** Configuration management, logging, and health checks ensure production readiness.

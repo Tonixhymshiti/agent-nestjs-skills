@@ -1,26 +1,18 @@
 ---
 title: Use Caching Strategically
 impact: HIGH
-impactDescription: 10-100x response time improvement for cached data
-tags:
-  - performance
-  - caching
-  - redis
-  - cache-manager
+impactDescription: Dramatically reduces database load and response times
+tags: performance, caching, redis, optimization
 ---
 
-# Use Caching Strategically
-
-**Impact: HIGH** - Caching dramatically reduces database load and response times
-
-## Explanation
+## Use Caching Strategically
 
 Implement caching for expensive operations, frequently accessed data, and external API calls. Use NestJS CacheModule with appropriate TTLs and cache invalidation strategies. Don't cache everything - focus on high-impact areas.
 
-## Incorrect
+**Incorrect (no caching or caching everything):**
 
 ```typescript
-// DON'T: No caching for expensive, repeated queries
+// No caching for expensive, repeated queries
 @Injectable()
 export class ProductsService {
   async getPopular(): Promise<Product[]> {
@@ -36,7 +28,7 @@ export class ProductsService {
   }
 }
 
-// DON'T: Cache everything without thought
+// Cache everything without thought
 @Injectable()
 export class UsersService {
   @CacheKey('users')
@@ -49,7 +41,7 @@ export class UsersService {
 }
 ```
 
-## Correct
+**Correct (strategic caching with proper invalidation):**
 
 ```typescript
 // Setup caching module
@@ -90,17 +82,6 @@ export class ProductsService {
     return products;
   }
 
-  private async fetchPopularProducts(): Promise<Product[]> {
-    return this.productsRepo
-      .createQueryBuilder('p')
-      .leftJoin('p.orders', 'o')
-      .select('p.*, COUNT(o.id) as orderCount')
-      .groupBy('p.id')
-      .orderBy('orderCount', 'DESC')
-      .limit(20)
-      .getMany();
-  }
-
   // Invalidate cache on changes
   async updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
     const product = await this.productsRepo.save({ id, ...dto });
@@ -113,49 +94,21 @@ export class ProductsService {
 @Controller('categories')
 @UseInterceptors(CacheInterceptor)
 export class CategoriesController {
-  // Cache entire endpoint response
   @Get()
   @CacheTTL(30 * 60 * 1000) // 30 minutes - categories rarely change
   findAll(): Promise<Category[]> {
     return this.categoriesService.findAll();
   }
 
-  // Different TTL for different endpoints
   @Get(':id')
   @CacheTTL(60 * 1000) // 1 minute
-  @CacheKey('category') // Auto-appends :id
+  @CacheKey('category')
   findOne(@Param('id') id: string): Promise<Category> {
     return this.categoriesService.findOne(id);
   }
 }
 
-// Cache external API calls
-@Injectable()
-export class ExternalApiService {
-  constructor(
-    @Inject(CACHE_MANAGER) private cache: Cache,
-    private http: HttpService,
-  ) {}
-
-  async getExchangeRate(currency: string): Promise<number> {
-    const cacheKey = `exchange:${currency}`;
-    const cached = await this.cache.get<number>(cacheKey);
-    if (cached) return cached;
-
-    const response = await firstValueFrom(
-      this.http.get(`https://api.exchange.com/rate/${currency}`),
-    );
-
-    await this.cache.set(cacheKey, response.data.rate, 15 * 60 * 1000);
-    return response.data.rate;
-  }
-}
-```
-
-## Cache Invalidation Patterns
-
-```typescript
-// Event-based invalidation
+// Event-based cache invalidation
 @Injectable()
 export class CacheInvalidationService {
   constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
@@ -167,29 +120,9 @@ export class CacheInvalidationService {
     await Promise.all([
       this.cache.del('products:popular'),
       this.cache.del(`product:${event.productId}`),
-      this.cache.del(`products:category:${event.categoryId}`),
     ]);
-  }
-}
-
-// Pattern-based invalidation (Redis)
-async invalidatePattern(pattern: string): Promise<void> {
-  const redis = this.cache.store as RedisStore;
-  const keys = await redis.keys(pattern);
-  if (keys.length) {
-    await redis.del(...keys);
   }
 }
 ```
 
-## Why This Matters
-
-- **Performance**: Cached responses are 10-100x faster
-- **Scalability**: Reduces database and API load
-- **Cost**: Fewer database queries = lower infrastructure costs
-- **User experience**: Faster responses improve engagement
-
-## Reference
-
-- [NestJS Caching](https://docs.nestjs.com/techniques/caching)
-- [Keyv Cache Stores](https://github.com/jaredwray/keyv)
+Reference: [NestJS Caching](https://docs.nestjs.com/techniques/caching)

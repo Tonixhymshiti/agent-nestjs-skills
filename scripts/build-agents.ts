@@ -224,8 +224,8 @@ ${metadata.abstract}
 
       // Add rule content (skip the first header since we already added it)
       let ruleContent = rule.content;
-      // Remove the first h1 header if it matches the title
-      ruleContent = ruleContent.replace(/^#\s+.*\n+/, '');
+      // Remove the first h1 or h2 header if it matches the title
+      ruleContent = ruleContent.replace(/^#{1,2}\s+.*\n+/, '');
       // Remove the impact line if present (we already added it)
       ruleContent = ruleContent.replace(/^\*\*Impact:.*\*\*.*\n+/, '');
 

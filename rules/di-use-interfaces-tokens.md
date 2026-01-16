@@ -1,26 +1,18 @@
 ---
 title: Use Injection Tokens for Interfaces
 impact: HIGH
-impactDescription: Enables proper abstraction and testability
-tags:
-  - dependency-injection
-  - interfaces
-  - tokens
-  - abstraction
+impactDescription: Enables interface-based DI at runtime
+tags: dependency-injection, tokens, interfaces
 ---
 
-# Use Injection Tokens for Interfaces
-
-**Impact: HIGH** - TypeScript interfaces don't exist at runtime; tokens enable proper DI
-
-## Explanation
+## Use Injection Tokens for Interfaces
 
 TypeScript interfaces are erased at compile time and can't be used as injection tokens. Use string tokens, symbols, or abstract classes when you want to inject implementations of interfaces. This enables swapping implementations for testing or different environments.
 
-## Incorrect
+**Incorrect (interface can't be used as token):**
 
 ```typescript
-// DON'T: Interface can't be used as injection token
+// Interface can't be used as injection token
 interface PaymentGateway {
   charge(amount: number): Promise<PaymentResult>;
 }
@@ -37,7 +29,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (symbol tokens or abstract classes):**
 
 ```typescript
 // Option 1: String/Symbol tokens (most flexible)
@@ -99,16 +91,6 @@ export class StripeService extends PaymentGateway {
   }
 }
 
-@Module({
-  providers: [
-    {
-      provide: PaymentGateway,
-      useClass: StripeService,
-    },
-  ],
-})
-export class PaymentModule {}
-
 // No @Inject needed with abstract class
 @Injectable()
 export class OrdersService {
@@ -116,46 +98,4 @@ export class OrdersService {
 }
 ```
 
-## Testing Benefits
-
-```typescript
-describe('OrdersService', () => {
-  let service: OrdersService;
-  let mockPayment: jest.Mocked<PaymentGateway>;
-
-  beforeEach(async () => {
-    mockPayment = {
-      charge: jest.fn().mockResolvedValue({ success: true }),
-    };
-
-    const module = await Test.createTestingModule({
-      providers: [
-        OrdersService,
-        {
-          provide: PAYMENT_GATEWAY,
-          useValue: mockPayment,
-        },
-      ],
-    }).compile();
-
-    service = module.get(OrdersService);
-  });
-
-  it('should charge payment', async () => {
-    await service.createOrder({ amount: 100 });
-    expect(mockPayment.charge).toHaveBeenCalledWith(100);
-  });
-});
-```
-
-## Why This Matters
-
-- **Abstraction**: Code depends on interface, not implementation
-- **Testability**: Easy to swap real services for mocks
-- **Flexibility**: Change implementations without changing consumers
-- **Runtime safety**: Tokens ensure DI works correctly
-
-## Reference
-
-- [NestJS Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
-- [Injection Tokens](https://docs.nestjs.com/fundamentals/custom-providers#non-class-based-provider-tokens)
+Reference: [NestJS Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)

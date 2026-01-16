@@ -1,26 +1,18 @@
 ---
 title: Use Supertest for E2E Testing
-impact: MEDIUM-HIGH
-impactDescription: E2E tests catch integration issues that unit tests miss
-tags:
-  - testing
-  - e2e
-  - supertest
-  - integration
+impact: HIGH
+impactDescription: Validates the full request/response cycle
+tags: testing, e2e, supertest, integration
 ---
 
-# Use Supertest for E2E Testing
-
-**Impact: MEDIUM-HIGH** - E2E tests validate the full request/response cycle
-
-## Explanation
+## Use Supertest for E2E Testing
 
 End-to-end tests use Supertest to make real HTTP requests against your NestJS application. They test the full stack including middleware, guards, pipes, and interceptors. E2E tests catch integration issues that unit tests miss.
 
-## Incorrect
+**Incorrect (no proper E2E setup or teardown):**
 
 ```typescript
-// DON'T: Only unit test controllers
+// Only unit test controllers
 describe('UsersController', () => {
   it('should return users', async () => {
     const service = { findAll: jest.fn().mockResolvedValue([]) };
@@ -33,7 +25,7 @@ describe('UsersController', () => {
   });
 });
 
-// DON'T: E2E tests without proper setup/teardown
+// E2E tests without proper setup/teardown
 describe('Users API', () => {
   it('should create user', async () => {
     const app = await NestFactory.create(AppModule);
@@ -44,7 +36,7 @@ describe('Users API', () => {
 });
 ```
 
-## Correct
+**Correct (proper E2E setup with Supertest):**
 
 ```typescript
 // Proper E2E test setup
@@ -101,24 +93,6 @@ describe('UsersController (e2e)', () => {
           expect(res.body.message).toContain('email');
         });
     });
-
-    it('should return 400 for missing required fields', () => {
-      return request(app.getHttpServer())
-        .post('/users')
-        .send({})
-        .expect(400);
-    });
-  });
-
-  describe('/users (GET)', () => {
-    it('should return array of users', () => {
-      return request(app.getHttpServer())
-        .get('/users')
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-        });
-    });
   });
 
   describe('/users/:id (GET)', () => {
@@ -129,11 +103,8 @@ describe('UsersController (e2e)', () => {
     });
   });
 });
-```
 
-## Testing with Authentication
-
-```typescript
+// Testing with authentication
 describe('Protected Routes (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
@@ -170,20 +141,9 @@ describe('Protected Routes (e2e)', () => {
         expect(res.body.email).toBe('test@test.com');
       });
   });
-
-  it('should deny access with invalid token', () => {
-    return request(app.getHttpServer())
-      .get('/users/me')
-      .set('Authorization', 'Bearer invalid-token')
-      .expect(401);
-  });
 });
-```
 
-## Database Isolation
-
-```typescript
-// Use test database and clean between tests
+// Database isolation for E2E tests
 describe('Orders API (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
@@ -212,42 +172,7 @@ describe('Orders API (e2e)', () => {
     await dataSource.destroy();
     await app.close();
   });
-
-  it('should create order and update inventory', async () => {
-    // Seed test data
-    await dataSource.getRepository(Product).save({
-      id: 'prod-1',
-      name: 'Test Product',
-      stock: 10,
-    });
-
-    // Create order
-    const response = await request(app.getHttpServer())
-      .post('/orders')
-      .send({
-        items: [{ productId: 'prod-1', quantity: 2 }],
-      })
-      .expect(201);
-
-    expect(response.body.total).toBeDefined();
-
-    // Verify inventory updated
-    const product = await dataSource.getRepository(Product).findOne({
-      where: { id: 'prod-1' },
-    });
-    expect(product.stock).toBe(8);
-  });
 });
 ```
 
-## Why This Matters
-
-- **Full stack testing**: Catches routing, middleware, serialization bugs
-- **Integration issues**: Tests component interactions
-- **Real behavior**: Tests actual HTTP request/response
-- **Confidence**: Ensures API contract works as expected
-
-## Reference
-
-- [NestJS E2E Testing](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)
-- [Supertest](https://github.com/visionmedia/supertest)
+Reference: [NestJS E2E Testing](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)

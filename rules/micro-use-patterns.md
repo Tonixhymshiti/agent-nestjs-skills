@@ -2,25 +2,17 @@
 title: Use Message and Event Patterns Correctly
 impact: MEDIUM
 impactDescription: Proper patterns ensure reliable microservice communication
-tags:
-  - microservices
-  - message-patterns
-  - events
-  - communication
+tags: microservices, message-pattern, event-pattern, communication
 ---
 
-# Use Message and Event Patterns Correctly
-
-**Impact: MEDIUM** - Choosing the right pattern determines communication reliability
-
-## Explanation
+## Use Message and Event Patterns Correctly
 
 NestJS microservices support two communication patterns: request-response (MessagePattern) and event-based (EventPattern). Use MessagePattern when you need a response, and EventPattern for fire-and-forget notifications. Understanding the difference prevents communication bugs.
 
-## Incorrect
+**Incorrect (using wrong pattern for use case):**
 
 ```typescript
-// DON'T: Use @MessagePattern for fire-and-forget
+// Use @MessagePattern for fire-and-forget
 @Controller()
 export class NotificationsController {
   @MessagePattern('user.created')
@@ -31,7 +23,7 @@ export class NotificationsController {
   }
 }
 
-// DON'T: Use @EventPattern expecting a response
+// Use @EventPattern expecting a response
 @Controller()
 export class OrdersController {
   @EventPattern('inventory.check')
@@ -41,7 +33,7 @@ export class OrdersController {
   }
 }
 
-// DON'T: Tight coupling in client
+// Tight coupling in client
 @Injectable()
 export class UsersService {
   async createUser(dto: CreateUserDto): Promise<User> {
@@ -56,7 +48,7 @@ export class UsersService {
 }
 ```
 
-## Correct
+**Correct (use MessagePattern for request-response, EventPattern for fire-and-forget):**
 
 ```typescript
 // MessagePattern: Request-Response (when you NEED a response)
@@ -117,12 +109,8 @@ export class UsersService {
     return user; // User creation succeeds regardless of event handling
   }
 }
-```
 
-## Hybrid Pattern for Critical Events
-
-```typescript
-// When events are critical but shouldn't block
+// Hybrid pattern for critical events
 @Injectable()
 export class OrdersService {
   async createOrder(dto: CreateOrderDto): Promise<Order> {
@@ -151,11 +139,8 @@ export class OrdersService {
     return order;
   }
 }
-```
 
-## Error Handling
-
-```typescript
+// Error handling patterns
 // MessagePattern errors propagate to caller
 @MessagePattern({ cmd: 'get_user' })
 async getUser(userId: string): Promise<User> {
@@ -179,14 +164,4 @@ async handleOrderCreated(data: OrderCreatedEvent): Promise<void> {
 }
 ```
 
-## Why This Matters
-
-- **Reliability**: Wrong pattern causes blocking or lost responses
-- **Decoupling**: EventPattern keeps services independent
-- **Resilience**: Fire-and-forget prevents cascade failures
-- **Performance**: Async events don't block critical paths
-
-## Reference
-
-- [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
-- [Message Patterns](https://docs.nestjs.com/microservices/basics#patterns)
+Reference: [NestJS Microservices](https://docs.nestjs.com/microservices/basics)

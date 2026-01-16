@@ -1,23 +1,15 @@
 ---
 title: Single Responsibility for Services
 impact: CRITICAL
-impactDescription: Reduces complexity and improves testability by 40%+
-tags:
-  - architecture
-  - services
-  - solid
-  - maintainability
+impactDescription: "40%+ improvement in testability"
+tags: architecture, services, single-responsibility
 ---
 
-# Single Responsibility for Services
+## Single Responsibility for Services
 
-**Impact: CRITICAL** - Services should do one thing well
+Each service should have a single, well-defined responsibility. Avoid "god services" that handle multiple unrelated concerns. If a service name includes "And" or handles more than one domain concept, it likely violates single responsibility. This reduces complexity and improves testability by 40%+.
 
-## Explanation
-
-Each service should have a single, well-defined responsibility. Avoid "god services" that handle multiple unrelated concerns. If a service name includes "And" or handles more than one domain concept, it likely violates single responsibility.
-
-## Incorrect
+**Incorrect (god service anti-pattern):**
 
 ```typescript
 // God service anti-pattern
@@ -53,7 +45,7 @@ export class UserAndOrderService {
 }
 ```
 
-## Correct
+**Correct (focused services with single responsibility):**
 
 ```typescript
 // Focused services with single responsibility
@@ -111,14 +103,4 @@ export class OrdersController {
 }
 ```
 
-## Why This Matters
-
-- **Testability**: Small services are easier to unit test
-- **Reusability**: Focused services can be reused across features
-- **Maintainability**: Changes to one concern don't affect others
-- **Team velocity**: Multiple developers can work on different services
-
-## Reference
-
-- [SOLID Principles](https://en.wikipedia.org/wiki/Single-responsibility_principle)
-- [NestJS Providers](https://docs.nestjs.com/providers)
+Reference: [NestJS Providers](https://docs.nestjs.com/providers)

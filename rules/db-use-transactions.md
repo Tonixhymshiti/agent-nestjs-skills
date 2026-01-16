@@ -1,26 +1,18 @@
 ---
 title: Use Transactions for Multi-Step Operations
-impact: MEDIUM-HIGH
-impactDescription: Prevents data inconsistency and partial updates
-tags:
-  - database
-  - transactions
-  - typeorm
-  - consistency
+impact: HIGH
+impactDescription: Ensures data consistency in multi-step operations
+tags: database, transactions, typeorm, consistency
 ---
 
-# Use Transactions for Multi-Step Operations
-
-**Impact: MEDIUM-HIGH** - Transactions ensure data consistency in multi-step operations
-
-## Explanation
+## Use Transactions for Multi-Step Operations
 
 When multiple database operations must succeed or fail together, wrap them in a transaction. This prevents partial updates that leave your data in an inconsistent state. Use TypeORM's transaction APIs or the DataSource query runner for complex scenarios.
 
-## Incorrect
+**Incorrect (multiple saves without transaction):**
 
 ```typescript
-// DON'T: Multiple saves without transaction
+// Multiple saves without transaction
 @Injectable()
 export class OrdersService {
   async createOrder(userId: string, items: OrderItem[]): Promise<Order> {
@@ -40,7 +32,7 @@ export class OrdersService {
 }
 ```
 
-## Correct
+**Correct (use DataSource.transaction for automatic rollback):**
 
 ```typescript
 // Use DataSource.transaction() for automatic rollback
@@ -145,62 +137,4 @@ export class UsersRepository {
 }
 ```
 
-## Transaction Decorators (Custom)
-
-```typescript
-// Create a transaction decorator for cleaner code
-export function Transactional() {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-  ) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
-      const dataSource = this.dataSource as DataSource;
-      return dataSource.transaction(async (manager) => {
-        // Temporarily inject transactional manager
-        const originalManager = this.entityManager;
-        this.entityManager = manager;
-        try {
-          return await originalMethod.apply(this, args);
-        } finally {
-          this.entityManager = originalManager;
-        }
-      });
-    };
-
-    return descriptor;
-  };
-}
-
-// Usage
-@Injectable()
-export class OrdersService {
-  constructor(
-    private dataSource: DataSource,
-    private entityManager: EntityManager,
-  ) {}
-
-  @Transactional()
-  async createOrder(dto: CreateOrderDto): Promise<Order> {
-    // All repo calls use transactional manager automatically
-    const order = await this.entityManager.save(Order, dto);
-    await this.entityManager.save(AuditLog, { action: 'order.created' });
-    return order;
-  }
-}
-```
-
-## Why This Matters
-
-- **Data integrity**: All-or-nothing operations prevent corruption
-- **Consistency**: No partial updates from failed operations
-- **Audit compliance**: Complete operation trails
-- **Error recovery**: Failed operations leave no traces
-
-## Reference
-
-- [TypeORM Transactions](https://typeorm.io/transactions)
-- [NestJS Database](https://docs.nestjs.com/techniques/database)
+Reference: [TypeORM Transactions](https://typeorm.io/transactions)

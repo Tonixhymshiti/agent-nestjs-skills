@@ -1,27 +1,18 @@
 ---
 title: Understand Provider Scopes
 impact: CRITICAL
-impactDescription: Prevents memory leaks and incorrect data sharing
-tags:
-  - dependency-injection
-  - scopes
-  - singleton
-  - request
-  - memory
+impactDescription: Prevents data leaks and performance issues
+tags: dependency-injection, scopes, request-context
 ---
 
-# Understand Provider Scopes
+## Understand Provider Scopes
 
-**Impact: CRITICAL** - Wrong scope causes data leaks between requests or performance issues
+NestJS has three provider scopes: DEFAULT (singleton), REQUEST (per-request instance), and TRANSIENT (new instance for each injection). Most providers should be singletons. Request-scoped providers have performance implications as they bubble up through the dependency tree. Understanding scopes prevents memory leaks and incorrect data sharing.
 
-## Explanation
-
-NestJS has three provider scopes: DEFAULT (singleton), REQUEST (per-request instance), and TRANSIENT (new instance for each injection). Most providers should be singletons. Request-scoped providers have performance implications as they bubble up through the dependency tree.
-
-## Incorrect
+**Incorrect (wrong scope usage):**
 
 ```typescript
-// DON'T: Request-scoped when not needed (performance hit)
+// Request-scoped when not needed (performance hit)
 @Injectable({ scope: Scope.REQUEST })
 export class UsersService {
   // This creates a new instance for EVERY request
@@ -31,7 +22,7 @@ export class UsersService {
   }
 }
 
-// DON'T: Singleton with mutable request state
+// Singleton with mutable request state
 @Injectable() // Default: singleton
 export class RequestContextService {
   private userId: string; // DANGER: Shared across all requests!
@@ -46,7 +37,7 @@ export class RequestContextService {
 }
 ```
 
-## Correct
+**Correct (appropriate scope for each use case):**
 
 ```typescript
 // Singleton for stateless services (default, most common)
@@ -100,37 +91,4 @@ export class AuditService {
 }
 ```
 
-## Scope Implications
-
-```typescript
-// When a service is REQUEST-scoped, all its dependents become request-scoped too
-@Injectable({ scope: Scope.REQUEST })
-export class RequestScopedService {}
-
-@Injectable() // This becomes effectively request-scoped!
-export class ConsumerService {
-  constructor(private requestScoped: RequestScopedService) {}
-}
-
-// TRANSIENT: New instance per injection point
-@Injectable({ scope: Scope.TRANSIENT })
-export class LoggerService {
-  constructor() {
-    this.instanceId = crypto.randomUUID();
-  }
-
-  // Each service gets its own logger instance
-}
-```
-
-## Why This Matters
-
-- **Data leaks**: Singleton state shared between requests causes security issues
-- **Performance**: Request-scoped services add overhead (new instances per request)
-- **Memory**: TRANSIENT without cleanup causes memory leaks
-- **Debugging**: Wrong scope causes intermittent, hard-to-reproduce bugs
-
-## Reference
-
-- [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/injection-scopes)
-- [nestjs-cls for Async Context](https://github.com/Papooch/nestjs-cls)
+Reference: [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/injection-scopes)

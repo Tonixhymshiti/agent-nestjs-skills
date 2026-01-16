@@ -1,26 +1,18 @@
 ---
 title: Use Pipes for Input Transformation
 impact: MEDIUM
-impactDescription: Pipes transform and validate input before reaching handlers
-tags:
-  - api
-  - pipes
-  - transformation
-  - validation
+impactDescription: Pipes ensure clean, validated data reaches your handlers
+tags: api, pipes, validation, transformation
 ---
 
-# Use Pipes for Input Transformation
-
-**Impact: MEDIUM** - Pipes ensure clean, validated data reaches your handlers
-
-## Explanation
+## Use Pipes for Input Transformation
 
 Use built-in pipes like `ParseIntPipe`, `ParseUUIDPipe`, and `DefaultValuePipe` for common transformations. Create custom pipes for business-specific transformations. Pipes separate validation/transformation logic from controllers.
 
-## Incorrect
+**Incorrect (manual type parsing in handlers):**
 
 ```typescript
-// DON'T: Manual type parsing in handlers
+// Manual type parsing in handlers
 @Controller('users')
 export class UsersController {
   @Get(':id')
@@ -45,7 +37,7 @@ export class UsersController {
   }
 }
 
-// DON'T: Type coercion without validation
+// Type coercion without validation
 @Get()
 async search(@Query('price') price: string): Promise<Product[]> {
   const priceNum = +price; // NaN if invalid, no error
@@ -53,7 +45,7 @@ async search(@Query('price') price: string): Promise<Product[]> {
 }
 ```
 
-## Correct
+**Correct (use built-in and custom pipes):**
 
 ```typescript
 // Use built-in pipes for common transformations
@@ -101,12 +93,8 @@ async getReports(
 ): Promise<Report[]> {
   return this.reportsService.findBetween(from, to);
 }
-```
 
-## Custom Transformation Pipes
-
-```typescript
-// Trim and lowercase email
+// Custom transformation pipes
 @Injectable()
 export class NormalizeEmailPipe implements PipeTransform<string, string> {
   transform(value: string): string {
@@ -141,11 +129,7 @@ export class SanitizeHtmlPipe implements PipeTransform<string, string> {
     return sanitizeHtml(value, { allowedTags: [] });
   }
 }
-```
 
-## Validation Pipe with Transform
-
-```typescript
 // Global validation pipe with transformation
 app.useGlobalPipes(
   new ValidationPipe({
@@ -190,12 +174,8 @@ async findAll(@Query() dto: FindProductsDto): Promise<Product[]> {
   // dto is already transformed and validated
   return this.productsService.findAll(dto);
 }
-```
 
-## Pipe Error Customization
-
-```typescript
-// Custom error messages
+// Pipe error customization
 @Injectable()
 export class CustomParseIntPipe extends ParseIntPipe {
   constructor() {
@@ -222,14 +202,4 @@ async findOne(
 }
 ```
 
-## Why This Matters
-
-- **Separation of concerns**: Transformation logic separate from business logic
-- **Reusability**: Same pipe used across multiple handlers
-- **Type safety**: Handlers receive correct types
-- **Clean handlers**: Less boilerplate in controller methods
-
-## Reference
-
-- [NestJS Pipes](https://docs.nestjs.com/pipes)
-- [Built-in Pipes](https://docs.nestjs.com/pipes#built-in-pipes)
+Reference: [NestJS Pipes](https://docs.nestjs.com/pipes)
