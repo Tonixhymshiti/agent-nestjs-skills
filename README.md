@@ -1,98 +1,58 @@
-# NestJS Best Practices Skill
+# NestJS Best Practices
 
-A comprehensive Claude Code skill for NestJS best practices, providing AI agents with deep knowledge of NestJS patterns, anti-patterns, and production-ready code examples.
-
-## Overview
-
-This skillset contains **40 rules** across **10 categories**, covering everything from architecture patterns to deployment strategies. Each rule includes:
-
-- Impact assessment (CRITICAL, HIGH, MEDIUM-HIGH, MEDIUM, LOW-MEDIUM)
-- Incorrect code examples showing anti-patterns
-- Correct code examples with explanations
-- References to official documentation
-
-## Categories
-
-| Section | Category | Impact | Rules |
-|---------|----------|--------|-------|
-| 1 | Architecture | CRITICAL | 6 |
-| 2 | Dependency Injection | CRITICAL | 6 |
-| 3 | Error Handling | HIGH | 3 |
-| 4 | Security | HIGH | 5 |
-| 5 | Performance | HIGH | 4 |
-| 6 | Testing | MEDIUM-HIGH | 3 |
-| 7 | Database & ORM | MEDIUM-HIGH | 3 |
-| 8 | API Design | MEDIUM | 4 |
-| 9 | Microservices | MEDIUM | 3 |
-| 10 | DevOps & Deployment | LOW-MEDIUM | 3 |
+A structured repository for creating and maintaining NestJS Best Practices optimized for agents and LLMs.
 
 ## Structure
 
-```
-nestjs-best-practices-skill/
-├── SKILL.md              # Main entry point for Claude Code
-├── AGENTS.md             # Consolidated rules document (generated)
-├── metadata.json         # Version and metadata
-├── rules/                # Individual rule files
-│   ├── _sections.md      # Category definitions
-│   ├── _template.md      # Template for new rules
-│   ├── arch-*.md         # Architecture rules
-│   ├── di-*.md           # Dependency Injection rules
-│   ├── error-*.md        # Error Handling rules
-│   ├── security-*.md     # Security rules
-│   ├── perf-*.md         # Performance rules
-│   ├── test-*.md         # Testing rules
-│   ├── db-*.md           # Database rules
-│   ├── api-*.md          # API Design rules
-│   ├── micro-*.md        # Microservices rules
-│   └── devops-*.md       # DevOps rules
-└── scripts/              # Build tools
-    ├── build-agents.ts   # AGENTS.md generator
-    ├── build.sh          # Shell wrapper
-    └── package.json      # NPM config
-```
+- `rules/` - Individual rule files (one per rule)
+  - `_sections.md` - Section metadata (titles, impacts, descriptions)
+  - `_template.md` - Template for creating new rules
+  - `area-description.md` - Individual rule files
+- `scripts/` - Build scripts and utilities
+- `metadata.json` - Document metadata (version, organization, abstract)
+- __`AGENTS.md`__ - Compiled output (generated)
 
-## Workflow
+## Getting Started
 
-The repository uses a prefix-based naming system where filenames indicate their section:
+1. Install dependencies:
+   ```bash
+   cd scripts && npm install
+   ```
 
-- `arch-` rules address Architecture patterns
-- `di-` rules focus on Dependency Injection
-- `security-` rules cover Security best practices
-- `perf-` rules handle Performance optimization
+2. Build AGENTS.md from rules:
+   ```bash
+   npm run build
+   # or
+   ./scripts/build.sh
+   ```
 
-Rules are automatically sorted alphabetically within each section when building `AGENTS.md`.
+## Creating a New Rule
 
-## Building
+1. Copy `rules/_template.md` to `rules/area-description.md`
+2. Choose the appropriate area prefix:
+   - `arch-` for Architecture (Section 1)
+   - `di-` for Dependency Injection (Section 2)
+   - `error-` for Error Handling (Section 3)
+   - `security-` for Security (Section 4)
+   - `perf-` for Performance (Section 5)
+   - `test-` for Testing (Section 6)
+   - `db-` for Database & ORM (Section 7)
+   - `api-` for API Design (Section 8)
+   - `micro-` for Microservices (Section 9)
+   - `devops-` for DevOps & Deployment (Section 10)
+3. Fill in the frontmatter and content
+4. Ensure you have clear examples with explanations
+5. Run the build script to regenerate AGENTS.md
 
-To regenerate `AGENTS.md` after modifying rules:
+## Rule File Structure
 
-```bash
-cd scripts
-npx ts-node build-agents.ts
-```
-
-Or use the shell wrapper:
-
-```bash
-./scripts/build.sh
-```
-
-## Adding New Rules
-
-1. Copy `rules/_template.md` to a new file with the appropriate prefix
-2. Fill in the frontmatter and content following the template structure
-3. Run the build script to regenerate `AGENTS.md`
-
-### Rule Structure
-
-Each rule follows this format:
+Each rule file should follow this structure:
 
 ```markdown
 ---
 title: Rule Title Here
 impact: MEDIUM
-impactDescription: Brief description of impact
+impactDescription: Optional description
 tags: tag1, tag2, tag3
 ---
 
@@ -102,20 +62,30 @@ Brief explanation of the rule and why it matters.
 
 **Incorrect (description of what's wrong):**
 
-\`\`\`typescript
-// Bad code example here
-\`\`\`
+```typescript
+// Bad code example
+```
 
 **Correct (description of what's right):**
 
-\`\`\`typescript
-// Good code example here
-\`\`\`
+```typescript
+// Good code example
+```
+
+Optional explanatory text after examples.
 
 Reference: [NestJS Documentation](https://docs.nestjs.com)
 ```
 
-## Impact Classification
+## File Naming Convention
+
+- Files starting with `_` are special (excluded from build)
+- Rule files: `area-description.md` (e.g., `arch-avoid-circular-deps.md`)
+- Section is automatically inferred from filename prefix
+- Rules are sorted alphabetically by title within each section
+- IDs (e.g., 1.1, 1.2) are auto-generated during build
+
+## Impact Levels
 
 | Level | Description |
 |-------|-------------|
@@ -124,3 +94,22 @@ Reference: [NestJS Documentation](https://docs.nestjs.com)
 | MEDIUM-HIGH | Notable impact on quality and developer experience |
 | MEDIUM | Moderate impact on code quality and best practices |
 | LOW-MEDIUM | Minor improvements for consistency and maintainability |
+
+## Scripts
+
+- `npm run build` (in scripts/) - Compile rules into AGENTS.md
+
+## Contributing
+
+When adding or modifying rules:
+
+1. Use the correct filename prefix for your section
+2. Follow the `_template.md` structure
+3. Include clear bad/good examples with explanations
+4. Add appropriate tags
+5. Run the build script to regenerate AGENTS.md
+6. Rules are automatically sorted by title - no need to manage numbers!
+
+## Acknowledgments
+
+Inspired by the [Vercel React Best Practices](https://github.com/vercel-labs/agent-skills) skill structure.

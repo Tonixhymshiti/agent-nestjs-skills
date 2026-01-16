@@ -1,25 +1,56 @@
 # Sections
 
-This document outlines ten NestJS best practices categories ranked by impact:
+This file defines all sections, their ordering, impact levels, and descriptions.
+The section ID (in parentheses) is the filename prefix used to group rules.
 
-1. **Architecture (arch)** — CRITICAL impact. Proper module organization and dependency management are the foundation of maintainable NestJS applications.
+---
 
-2. **Dependency Injection (di)** — CRITICAL impact. NestJS's IoC container is powerful but can be misused. Understanding scopes and injection patterns is essential.
+## 1. Architecture (arch)
 
-3. **Error Handling (error)** — HIGH impact. Consistent error handling improves debugging, user experience, and API reliability.
+**Impact:** CRITICAL
+**Description:** Proper module organization and dependency management are the foundation of maintainable NestJS applications. Circular dependencies and god services are the #1 architecture killer.
 
-4. **Security (security)** — HIGH impact. Security vulnerabilities can be catastrophic. Input validation, authentication, and data protection are non-negotiable.
+## 2. Dependency Injection (di)
 
-5. **Performance (perf)** — HIGH impact. Optimizing request handling, caching, and database queries directly impacts application responsiveness.
+**Impact:** CRITICAL
+**Description:** NestJS's IoC container is powerful but can be misused. Understanding scopes, injection tokens, and proper patterns is essential for testable code.
 
-6. **Testing (test)** — MEDIUM-HIGH impact. Well-tested applications are more reliable. Understanding NestJS testing utilities ensures comprehensive coverage.
+## 3. Error Handling (error)
 
-7. **Database & ORM (db)** — MEDIUM-HIGH impact. Proper database access patterns and query optimization are crucial for data-intensive applications.
+**Impact:** HIGH
+**Description:** Consistent error handling improves debugging, user experience, and API reliability. Centralized exception filters ensure uniform error responses.
 
-8. **API Design (api)** — MEDIUM impact. RESTful conventions, versioning, and consistent response formats improve API usability.
+## 4. Security (security)
 
-9. **Microservices (micro)** — MEDIUM impact. Building distributed systems requires understanding message patterns and inter-service communication.
+**Impact:** HIGH
+**Description:** Security vulnerabilities can be catastrophic. Input validation, authentication, authorization, and data protection are non-negotiable.
 
-10. **DevOps & Deployment (devops)** — LOW-MEDIUM impact. Configuration management, logging, and health checks ensure production readiness.
+## 5. Performance (perf)
 
-Each section uses a filename prefix to organize related optimization rules.
+**Impact:** HIGH
+**Description:** Optimizing request handling, caching, and database queries directly impacts application responsiveness and scalability.
+
+## 6. Testing (test)
+
+**Impact:** MEDIUM-HIGH
+**Description:** Well-tested applications are more reliable. NestJS testing utilities enable comprehensive unit and e2e coverage.
+
+## 7. Database & ORM (db)
+
+**Impact:** MEDIUM-HIGH
+**Description:** Proper database access patterns, transactions, and query optimization are crucial for data-intensive applications.
+
+## 8. API Design (api)
+
+**Impact:** MEDIUM
+**Description:** RESTful conventions, versioning, DTOs, and consistent response formats improve API usability and maintainability.
+
+## 9. Microservices (micro)
+
+**Impact:** MEDIUM
+**Description:** Building distributed systems requires understanding message patterns, health checks, and inter-service communication.
+
+## 10. DevOps & Deployment (devops)
+
+**Impact:** LOW-MEDIUM
+**Description:** Configuration management, structured logging, and graceful shutdown ensure production readiness and zero-downtime deployments.
