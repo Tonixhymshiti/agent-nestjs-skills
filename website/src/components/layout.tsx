@@ -54,7 +54,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com/kadajett/nestjs-best-practices-skill"
+              href="https://github.com/kadajett/agent-nestjs-skills"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground"

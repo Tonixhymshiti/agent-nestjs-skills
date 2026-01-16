@@ -6,7 +6,7 @@ import "./index.css";
 
 const router = createRouter({
   routeTree,
-  basepath: "/nestjs-best-practices-skill",
+  basepath: "/agent-nestjs-skills",
 });
 
 declare module "@tanstack/react-router" {

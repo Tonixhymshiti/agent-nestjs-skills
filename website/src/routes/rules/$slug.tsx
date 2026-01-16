@@ -70,7 +70,7 @@ function RulePage() {
       {/* Source link */}
       <div className="border-t border-border pt-6">
         <a
-          href={`https://github.com/kadajett/nestjs-best-practices-skill/blob/main/rules/${rule.filename}`}
+          href={`https://github.com/kadajett/agent-nestjs-skills/blob/main/rules/${rule.filename}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"

@@ -45,7 +45,7 @@ function HomePage() {
           </Button>
           <Button asChild variant="outline" size="lg">
             <a
-              href="https://github.com/kadajett/nestjs-best-practices-skill"
+              href="https://github.com/kadajett/agent-nestjs-skills"
               target="_blank"
               rel="noopener noreferrer"
             >
