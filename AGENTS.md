@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0
 **Organization:** NestJS Best Practices
-**Published:** undefined
+**Published:** January 2026
 
 ## Abstract
 

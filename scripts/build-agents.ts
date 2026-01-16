@@ -192,7 +192,7 @@ function generateAgentsMd(rules: Rule[], metadata: any): string {
 
 **Version:** ${metadata.version}
 **Organization:** ${metadata.organization}
-**Published:** ${metadata.publishedDate}
+**Published:** ${metadata.date}
 
 ## Abstract
 
