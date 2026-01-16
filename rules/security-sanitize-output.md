@@ -1,0 +1,193 @@
+---
+title: Sanitize Output to Prevent XSS
+impact: HIGH
+impactDescription: Prevents cross-site scripting attacks in rendered content
+tags:
+  - security
+  - xss
+  - sanitization
+  - output
+---
+
+# Sanitize Output to Prevent XSS
+
+**Impact: HIGH** - XSS vulnerabilities can compromise user sessions and data
+
+## Explanation
+
+While NestJS APIs typically return JSON (which browsers don't execute), XSS risks exist when rendering HTML, storing user content, or when frontend frameworks improperly handle API responses. Sanitize user-generated content before storage and use proper Content-Type headers.
+
+## Incorrect
+
+```typescript
+// DON'T: Store raw HTML from users
+@Injectable()
+export class CommentsService {
+  async create(dto: CreateCommentDto): Promise<Comment> {
+    // User can inject: <script>steal(document.cookie)</script>
+    return this.repo.save({
+      content: dto.content, // Raw, unsanitized
+      authorId: dto.authorId,
+    });
+  }
+}
+
+// DON'T: Return HTML without sanitization
+@Controller('pages')
+export class PagesController {
+  @Get(':slug')
+  @Header('Content-Type', 'text/html')
+  async getPage(@Param('slug') slug: string): Promise<string> {
+    const page = await this.pagesService.findBySlug(slug);
+    // If page.content contains user input, XSS is possible
+    return `<html><body>${page.content}</body></html>`;
+  }
+}
+
+// DON'T: Reflect user input in errors
+@Get(':id')
+async findOne(@Param('id') id: string): Promise<User> {
+  const user = await this.repo.findOne({ where: { id } });
+  if (!user) {
+    // XSS if id contains malicious content and error is rendered
+    throw new NotFoundException(`User ${id} not found`);
+  }
+  return user;
+}
+```
+
+## Correct
+
+```typescript
+// Sanitize HTML content before storage
+import * as sanitizeHtml from 'sanitize-html';
+
+@Injectable()
+export class CommentsService {
+  private readonly sanitizeOptions: sanitizeHtml.IOptions = {
+    allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+    allowedAttributes: {
+      a: ['href', 'title'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+  };
+
+  async create(dto: CreateCommentDto): Promise<Comment> {
+    return this.repo.save({
+      content: sanitizeHtml(dto.content, this.sanitizeOptions),
+      authorId: dto.authorId,
+    });
+  }
+}
+
+// Use validation pipe to strip HTML
+import { Transform } from 'class-transformer';
+
+export class CreatePostDto {
+  @IsString()
+  @MaxLength(1000)
+  @Transform(({ value }) => sanitizeHtml(value, { allowedTags: [] }))
+  title: string;
+
+  @IsString()
+  @Transform(({ value }) =>
+    sanitizeHtml(value, {
+      allowedTags: ['p', 'br', 'b', 'i', 'a'],
+      allowedAttributes: { a: ['href'] },
+    }),
+  )
+  content: string;
+}
+
+// Set proper Content-Type headers
+@Controller('api')
+export class ApiController {
+  @Get('data')
+  @Header('Content-Type', 'application/json')
+  async getData(): Promise<DataResponse> {
+    // JSON response - browser won't execute scripts
+    return this.service.getData();
+  }
+}
+
+// Sanitize error messages
+@Get(':id')
+async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<User> {
+  const user = await this.repo.findOne({ where: { id } });
+  if (!user) {
+    // UUID validation ensures safe format
+    throw new NotFoundException('User not found');
+  }
+  return user;
+}
+```
+
+## Content Security Policy
+
+```typescript
+// Use Helmet for CSP headers
+import helmet from 'helmet';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameSrc: ["'none'"],
+        },
+      },
+    }),
+  );
+
+  await app.listen(3000);
+}
+
+// Add X-Content-Type-Options
+app.use(helmet.noSniff());
+
+// Prevent clickjacking
+app.use(helmet.frameguard({ action: 'deny' }));
+```
+
+## Markdown Sanitization
+
+```typescript
+// Safe markdown rendering
+import * as marked from 'marked';
+import * as DOMPurify from 'isomorphic-dompurify';
+
+@Injectable()
+export class MarkdownService {
+  render(markdown: string): string {
+    // First render markdown
+    const html = marked.parse(markdown);
+
+    // Then sanitize the output
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'blockquote'],
+      ALLOWED_ATTR: ['href', 'title', 'class'],
+    });
+  }
+}
+```
+
+## Why This Matters
+
+- **Session hijacking**: XSS can steal auth tokens
+- **Data theft**: Attackers can read sensitive page content
+- **Defacement**: Malicious content injected into pages
+- **Malware distribution**: Redirect users to malicious sites
+
+## Reference
+
+- [OWASP XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
+- [sanitize-html](https://www.npmjs.com/package/sanitize-html)
