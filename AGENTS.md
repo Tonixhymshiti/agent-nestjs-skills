@@ -1,8 +1,16 @@
 # NestJS Best Practices
 
-**Version:** 1.0.0
-**Organization:** NestJS Best Practices
-**Published:** January 2026
+**Version 1.0.0**
+NestJS Best Practices
+January 2026
+
+> **Note:**
+> This document is mainly for agents and LLMs to follow when maintaining,
+> generating, or refactoring NestJS codebases. Humans may also find it
+> useful, but guidance here is optimized for automation and consistency
+> by AI-assisted workflows.
+
+---
 
 ## Abstract
 
@@ -12,73 +20,53 @@ Comprehensive best practices and architecture guide for NestJS applications, des
 
 ## Table of Contents
 
-### 1. Architecture (CRITICAL)
-
-- [1.1 Avoid Circular Dependencies](#avoid-circular-dependencies)
-- [1.2 Organize by Feature Modules](#organize-by-feature-modules)
-- [1.3 Single Responsibility for Services](#single-responsibility-for-services)
-- [1.4 Use Event-Driven Architecture for Decoupling](#use-event-driven-architecture-for-decoupling)
-- [1.5 Use Repository Pattern for Data Access](#use-repository-pattern-for-data-access)
-
-### 2. Dependency Injection (CRITICAL)
-
-- [2.1 Avoid Service Locator Anti-Pattern](#avoid-service-locator-anti-pattern)
-- [2.2 Prefer Constructor Injection](#prefer-constructor-injection)
-- [2.3 Understand Provider Scopes](#understand-provider-scopes)
-- [2.4 Use Injection Tokens for Interfaces](#use-injection-tokens-for-interfaces)
-
-### 3. Error Handling (HIGH)
-
-- [3.1 Handle Async Errors Properly](#handle-async-errors-properly)
-- [3.2 Throw HTTP Exceptions from Services](#throw-http-exceptions-from-services)
-- [3.3 Use Exception Filters for Error Handling](#use-exception-filters-for-error-handling)
-
-### 4. Security (HIGH)
-
-- [4.1 Implement Secure JWT Authentication](#implement-secure-jwt-authentication)
-- [4.2 Implement Rate Limiting](#implement-rate-limiting)
-- [4.3 Sanitize Output to Prevent XSS](#sanitize-output-to-prevent-xss)
-- [4.4 Use Guards for Authentication and Authorization](#use-guards-for-authentication-and-authorization)
-- [4.5 Validate All Input with DTOs and Pipes](#validate-all-input-with-dtos-and-pipes)
-
-### 5. Performance (HIGH)
-
-- [5.1 Use Async Lifecycle Hooks Correctly](#use-async-lifecycle-hooks-correctly)
-- [5.2 Use Lazy Loading for Large Modules](#use-lazy-loading-for-large-modules)
-- [5.3 Optimize Database Queries](#optimize-database-queries)
-- [5.4 Use Caching Strategically](#use-caching-strategically)
-
-### 6. Testing (MEDIUM-HIGH)
-
-- [6.1 Use Supertest for E2E Testing](#use-supertest-for-e2e-testing)
-- [6.2 Mock External Services in Tests](#mock-external-services-in-tests)
-- [6.3 Use Testing Module for Unit Tests](#use-testing-module-for-unit-tests)
-
-### 7. Database & ORM (MEDIUM-HIGH)
-
-- [7.1 Avoid N+1 Query Problems](#avoid-n-1-query-problems)
-- [7.2 Use Database Migrations](#use-database-migrations)
-- [7.3 Use Transactions for Multi-Step Operations](#use-transactions-for-multi-step-operations)
-
-### 8. API Design (MEDIUM)
-
-- [8.1 Use DTOs and Serialization for API Responses](#use-dtos-and-serialization-for-api-responses)
-- [8.2 Use Interceptors for Cross-Cutting Concerns](#use-interceptors-for-cross-cutting-concerns)
-- [8.3 Use Pipes for Input Transformation](#use-pipes-for-input-transformation)
-- [8.4 Use API Versioning for Breaking Changes](#use-api-versioning-for-breaking-changes)
-
-### 9. Microservices (MEDIUM)
-
-- [9.1 Implement Health Checks for Microservices](#implement-health-checks-for-microservices)
-- [9.2 Use Message and Event Patterns Correctly](#use-message-and-event-patterns-correctly)
-- [9.3 Use Message Queues for Background Jobs](#use-message-queues-for-background-jobs)
-
-### 10. DevOps & Deployment (LOW-MEDIUM)
-
-- [10.1 Implement Graceful Shutdown](#implement-graceful-shutdown)
-- [10.2 Use ConfigModule for Environment Configuration](#use-configmodule-for-environment-configuration)
-- [10.3 Use Structured Logging](#use-structured-logging)
-
+1. [Architecture](#1-architecture) — **CRITICAL**
+   - 1.1 [Avoid Circular Dependencies](#11-avoid-circular-dependencies)
+   - 1.2 [Organize by Feature Modules](#12-organize-by-feature-modules)
+   - 1.3 [Single Responsibility for Services](#13-single-responsibility-for-services)
+   - 1.4 [Use Event-Driven Architecture for Decoupling](#14-use-event-driven-architecture-for-decoupling)
+   - 1.5 [Use Repository Pattern for Data Access](#15-use-repository-pattern-for-data-access)
+2. [Dependency Injection](#2-dependency-injection) — **CRITICAL**
+   - 2.1 [Avoid Service Locator Anti-Pattern](#21-avoid-service-locator-anti-pattern)
+   - 2.2 [Prefer Constructor Injection](#22-prefer-constructor-injection)
+   - 2.3 [Understand Provider Scopes](#23-understand-provider-scopes)
+   - 2.4 [Use Injection Tokens for Interfaces](#24-use-injection-tokens-for-interfaces)
+3. [Error Handling](#3-error-handling) — **HIGH**
+   - 3.1 [Handle Async Errors Properly](#31-handle-async-errors-properly)
+   - 3.2 [Throw HTTP Exceptions from Services](#32-throw-http-exceptions-from-services)
+   - 3.3 [Use Exception Filters for Error Handling](#33-use-exception-filters-for-error-handling)
+4. [Security](#4-security) — **HIGH**
+   - 4.1 [Implement Secure JWT Authentication](#41-implement-secure-jwt-authentication)
+   - 4.2 [Implement Rate Limiting](#42-implement-rate-limiting)
+   - 4.3 [Sanitize Output to Prevent XSS](#43-sanitize-output-to-prevent-xss)
+   - 4.4 [Use Guards for Authentication and Authorization](#44-use-guards-for-authentication-and-authorization)
+   - 4.5 [Validate All Input with DTOs and Pipes](#45-validate-all-input-with-dtos-and-pipes)
+5. [Performance](#5-performance) — **HIGH**
+   - 5.1 [Use Async Lifecycle Hooks Correctly](#51-use-async-lifecycle-hooks-correctly)
+   - 5.2 [Use Lazy Loading for Large Modules](#52-use-lazy-loading-for-large-modules)
+   - 5.3 [Optimize Database Queries](#53-optimize-database-queries)
+   - 5.4 [Use Caching Strategically](#54-use-caching-strategically)
+6. [Testing](#6-testing) — **MEDIUM-HIGH**
+   - 6.1 [Use Supertest for E2E Testing](#61-use-supertest-for-e2e-testing)
+   - 6.2 [Mock External Services in Tests](#62-mock-external-services-in-tests)
+   - 6.3 [Use Testing Module for Unit Tests](#63-use-testing-module-for-unit-tests)
+7. [Database & ORM](#7-database-orm) — **MEDIUM-HIGH**
+   - 7.1 [Avoid N+1 Query Problems](#71-avoid-n-1-query-problems)
+   - 7.2 [Use Database Migrations](#72-use-database-migrations)
+   - 7.3 [Use Transactions for Multi-Step Operations](#73-use-transactions-for-multi-step-operations)
+8. [API Design](#8-api-design) — **MEDIUM**
+   - 8.1 [Use DTOs and Serialization for API Responses](#81-use-dtos-and-serialization-for-api-responses)
+   - 8.2 [Use Interceptors for Cross-Cutting Concerns](#82-use-interceptors-for-cross-cutting-concerns)
+   - 8.3 [Use Pipes for Input Transformation](#83-use-pipes-for-input-transformation)
+   - 8.4 [Use API Versioning for Breaking Changes](#84-use-api-versioning-for-breaking-changes)
+9. [Microservices](#9-microservices) — **MEDIUM**
+   - 9.1 [Implement Health Checks for Microservices](#91-implement-health-checks-for-microservices)
+   - 9.2 [Use Message and Event Patterns Correctly](#92-use-message-and-event-patterns-correctly)
+   - 9.3 [Use Message Queues for Background Jobs](#93-use-message-queues-for-background-jobs)
+10. [DevOps & Deployment](#10-devops-deployment) — **LOW-MEDIUM**
+   - 10.1 [Implement Graceful Shutdown](#101-implement-graceful-shutdown)
+   - 10.2 [Use ConfigModule for Environment Configuration](#102-use-configmodule-for-environment-configuration)
+   - 10.3 [Use Structured Logging](#103-use-structured-logging)
 
 ---
 
@@ -88,7 +76,7 @@ Comprehensive best practices and architecture guide for NestJS applications, des
 
 ### 1.1 Avoid Circular Dependencies
 
-**Impact: CRITICAL** - "#1 cause of runtime crashes"
+**Impact: CRITICAL** — "#1 cause of runtime crashes"
 
 Circular dependencies occur when Module A imports Module B, and Module B imports Module A (directly or transitively). NestJS can sometimes resolve these through forward references, but they indicate architectural problems and should be avoided. This is the #1 cause of runtime crashes in NestJS applications.
 
@@ -166,7 +154,7 @@ Reference: [NestJS Circular Dependency](https://docs.nestjs.com/fundamentals/cir
 
 ### 1.2 Organize by Feature Modules
 
-**Impact: CRITICAL** - "3-5x faster onboarding and development"
+**Impact: CRITICAL** — "3-5x faster onboarding and development"
 
 Organize your application into feature modules that encapsulate related functionality. Each feature module should be self-contained with its own controllers, services, entities, and DTOs. Avoid organizing by technical layer (all controllers together, all services together). This enables 3-5x faster onboarding and feature development.
 
@@ -246,7 +234,7 @@ Reference: [NestJS Modules](https://docs.nestjs.com/modules)
 
 ### 1.3 Single Responsibility for Services
 
-**Impact: CRITICAL** - "40%+ improvement in testability"
+**Impact: CRITICAL** — "40%+ improvement in testability"
 
 Each service should have a single, well-defined responsibility. Avoid "god services" that handle multiple unrelated concerns. If a service name includes "And" or handles more than one domain concept, it likely violates single responsibility. This reduces complexity and improves testability by 40%+.
 
@@ -350,7 +338,7 @@ Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ### 1.4 Use Event-Driven Architecture for Decoupling
 
-**Impact: MEDIUM-HIGH** - Enables async processing and modularity
+**Impact: MEDIUM-HIGH** — Enables async processing and modularity
 
 Use `@nestjs/event-emitter` for intra-service events and message brokers for inter-service communication. Events allow modules to react to changes without direct dependencies, improving modularity and enabling async processing.
 
@@ -456,7 +444,7 @@ Reference: [NestJS Events](https://docs.nestjs.com/techniques/events)
 
 ### 1.5 Use Repository Pattern for Data Access
 
-**Impact: HIGH** - Decouples business logic from database
+**Impact: HIGH** — Decouples business logic from database
 
 Create custom repositories to encapsulate complex queries and database logic. This keeps services focused on business logic, makes testing easier with mock repositories, and allows changing database implementations without affecting business code.
 
@@ -555,7 +543,7 @@ Reference: [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.h
 
 ### 2.1 Avoid Service Locator Anti-Pattern
 
-**Impact: HIGH** - Hides dependencies and breaks testability
+**Impact: HIGH** — Hides dependencies and breaks testability
 
 Avoid using `ModuleRef.get()` or global containers to resolve dependencies at runtime. This hides dependencies, makes code harder to test, and breaks the benefits of dependency injection. Use constructor injection instead.
 
@@ -657,7 +645,7 @@ Reference: [NestJS Module Reference](https://docs.nestjs.com/fundamentals/module
 
 ### 2.2 Prefer Constructor Injection
 
-**Impact: CRITICAL** - Required for proper DI and testing
+**Impact: CRITICAL** — Required for proper DI and testing
 
 Always use constructor injection over property injection. Constructor injection makes dependencies explicit, enables TypeScript type checking, ensures dependencies are available when the class is instantiated, and improves testability. This is required for proper DI, testing, and TypeScript support.
 
@@ -741,7 +729,7 @@ Reference: [NestJS Providers](https://docs.nestjs.com/providers)
 
 ### 2.3 Understand Provider Scopes
 
-**Impact: CRITICAL** - Prevents data leaks and performance issues
+**Impact: CRITICAL** — Prevents data leaks and performance issues
 
 NestJS has three provider scopes: DEFAULT (singleton), REQUEST (per-request instance), and TRANSIENT (new instance for each injection). Most providers should be singletons. Request-scoped providers have performance implications as they bubble up through the dependency tree. Understanding scopes prevents memory leaks and incorrect data sharing.
 
@@ -833,7 +821,7 @@ Reference: [NestJS Injection Scopes](https://docs.nestjs.com/fundamentals/inject
 
 ### 2.4 Use Injection Tokens for Interfaces
 
-**Impact: HIGH** - Enables interface-based DI at runtime
+**Impact: HIGH** — Enables interface-based DI at runtime
 
 TypeScript interfaces are erased at compile time and can't be used as injection tokens. Use string tokens, symbols, or abstract classes when you want to inject implementations of interfaces. This enables swapping implementations for testing or different environments.
 
@@ -936,7 +924,7 @@ Reference: [NestJS Custom Providers](https://docs.nestjs.com/fundamentals/custom
 
 ### 3.1 Handle Async Errors Properly
 
-**Impact: HIGH** - Prevents process crashes from unhandled rejections
+**Impact: HIGH** — Prevents process crashes from unhandled rejections
 
 NestJS automatically catches errors from async route handlers, but errors from background tasks, event handlers, and manually created promises can crash your application. Always handle async errors explicitly and use global handlers as a safety net.
 
@@ -1059,7 +1047,7 @@ Reference: [Node.js Unhandled Rejections](https://nodejs.org/api/process.html#ev
 
 ### 3.2 Throw HTTP Exceptions from Services
 
-**Impact: HIGH** - Keeps controllers thin and simplifies error handling
+**Impact: HIGH** — Keeps controllers thin and simplifies error handling
 
 It's acceptable (and often preferable) to throw `HttpException` subclasses from services in HTTP applications. This keeps controllers thin and allows services to communicate appropriate error states. For truly layer-agnostic services, use domain exceptions that map to HTTP status codes.
 
@@ -1171,7 +1159,7 @@ Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
 
 ### 3.3 Use Exception Filters for Error Handling
 
-**Impact: HIGH** - Consistent, centralized error handling
+**Impact: HIGH** — Consistent, centralized error handling
 
 Never catch exceptions and manually format error responses in controllers. Use NestJS exception filters to handle errors consistently across your application. Create custom exception filters for specific error types and a global filter for unhandled exceptions.
 
@@ -1313,7 +1301,7 @@ Reference: [NestJS Exception Filters](https://docs.nestjs.com/exception-filters)
 
 ### 4.1 Implement Secure JWT Authentication
 
-**Impact: CRITICAL** - Essential for secure APIs
+**Impact: CRITICAL** — Essential for secure APIs
 
 Use `@nestjs/jwt` with `@nestjs/passport` for authentication. Store secrets securely, use appropriate token lifetimes, implement refresh tokens, and validate tokens properly. Never expose sensitive data in JWT payloads.
 
@@ -1457,7 +1445,7 @@ Reference: [NestJS Authentication](https://docs.nestjs.com/security/authenticati
 
 ### 4.2 Implement Rate Limiting
 
-**Impact: HIGH** - Protects against abuse and ensures fair resource usage
+**Impact: HIGH** — Protects against abuse and ensures fair resource usage
 
 Use `@nestjs/throttler` to limit request rates per client. Apply different limits for different endpoints - stricter for auth endpoints, more relaxed for read operations. Consider using Redis for distributed rate limiting in clustered deployments.
 
@@ -1580,7 +1568,7 @@ Reference: [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)
 
 ### 4.3 Sanitize Output to Prevent XSS
 
-**Impact: HIGH** - XSS vulnerabilities can compromise user sessions and data
+**Impact: HIGH** — XSS vulnerabilities can compromise user sessions and data
 
 While NestJS APIs typically return JSON (which browsers don't execute), XSS risks exist when rendering HTML, storing user content, or when frontend frameworks improperly handle API responses. Sanitize user-generated content before storage and use proper Content-Type headers.
 
@@ -1717,7 +1705,7 @@ Reference: [OWASP XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets
 
 ### 4.4 Use Guards for Authentication and Authorization
 
-**Impact: HIGH** - Enforces access control before handlers execute
+**Impact: HIGH** — Enforces access control before handlers execute
 
 Guards determine whether a request should be handled based on authentication state, roles, permissions, or other conditions. They run after middleware but before pipes and interceptors, making them ideal for access control. Use guards instead of manual checks in controllers.
 
@@ -1850,7 +1838,7 @@ Reference: [NestJS Guards](https://docs.nestjs.com/guards)
 
 ### 4.5 Validate All Input with DTOs and Pipes
 
-**Impact: HIGH** - First line of defense against attacks
+**Impact: HIGH** — First line of defense against attacks
 
 Always validate incoming data using class-validator decorators on DTOs and the global ValidationPipe. Never trust user input. Validate all request bodies, query parameters, and route parameters before processing.
 
@@ -2002,7 +1990,7 @@ Reference: [NestJS Validation](https://docs.nestjs.com/techniques/validation)
 
 ### 5.1 Use Async Lifecycle Hooks Correctly
 
-**Impact: HIGH** - Improper async handling blocks application startup
+**Impact: HIGH** — Improper async handling blocks application startup
 
 NestJS lifecycle hooks (`onModuleInit`, `onApplicationBootstrap`, etc.) support async operations. However, misusing them can block application startup or cause race conditions. Understand the lifecycle order and use hooks appropriately.
 
@@ -2109,7 +2097,7 @@ Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecy
 
 ### 5.2 Use Lazy Loading for Large Modules
 
-**Impact: MEDIUM** - Improves startup time for large applications
+**Impact: MEDIUM** — Improves startup time for large applications
 
 NestJS supports lazy-loading modules, which defers initialization until first use. This is valuable for large applications where some features are rarely used, serverless deployments where cold start time matters, or when certain modules have heavy initialization costs.
 
@@ -2228,7 +2216,7 @@ Reference: [NestJS Lazy Loading Modules](https://docs.nestjs.com/fundamentals/la
 
 ### 5.3 Optimize Database Queries
 
-**Impact: HIGH** - Database queries are typically the largest source of latency
+**Impact: HIGH** — Database queries are typically the largest source of latency
 
 Select only needed columns, use proper indexes, avoid over-fetching relations, and consider query performance when designing your data access. Most API slowness traces back to inefficient database queries.
 
@@ -2357,7 +2345,7 @@ Reference: [TypeORM Query Builder](https://typeorm.io/select-query-builder)
 
 ### 5.4 Use Caching Strategically
 
-**Impact: HIGH** - Dramatically reduces database load and response times
+**Impact: HIGH** — Dramatically reduces database load and response times
 
 Implement caching for expensive operations, frequently accessed data, and external API calls. Use NestJS CacheModule with appropriate TTLs and cache invalidation strategies. Don't cache everything - focus on high-impact areas.
 
@@ -2487,7 +2475,7 @@ Reference: [NestJS Caching](https://docs.nestjs.com/techniques/caching)
 
 ### 6.1 Use Supertest for E2E Testing
 
-**Impact: HIGH** - Validates the full request/response cycle
+**Impact: HIGH** — Validates the full request/response cycle
 
 End-to-end tests use Supertest to make real HTTP requests against your NestJS application. They test the full stack including middleware, guards, pipes, and interceptors. E2E tests catch integration issues that unit tests miss.
 
@@ -2663,7 +2651,7 @@ Reference: [NestJS E2E Testing](https://docs.nestjs.com/fundamentals/testing#end
 
 ### 6.2 Mock External Services in Tests
 
-**Impact: HIGH** - Ensures fast, reliable, deterministic tests
+**Impact: HIGH** — Ensures fast, reliable, deterministic tests
 
 Never call real external services (APIs, databases, message queues) in unit tests. Mock them to ensure tests are fast, deterministic, and don't incur costs. Use realistic mock data and test edge cases like timeouts and errors.
 
@@ -2840,7 +2828,7 @@ Reference: [Jest Mocking](https://jestjs.io/docs/mock-functions)
 
 ### 6.3 Use Testing Module for Unit Tests
 
-**Impact: HIGH** - Enables proper isolated testing with mocked dependencies
+**Impact: HIGH** — Enables proper isolated testing with mocked dependencies
 
 Use `@nestjs/testing` module to create isolated test environments with mocked dependencies. This ensures your tests run fast, don't depend on external services, and properly test your business logic in isolation.
 
@@ -2995,7 +2983,7 @@ Reference: [NestJS Testing](https://docs.nestjs.com/fundamentals/testing)
 
 ### 7.1 Avoid N+1 Query Problems
 
-**Impact: HIGH** - N+1 queries are one of the most common performance killers
+**Impact: HIGH** — N+1 queries are one of the most common performance killers
 
 N+1 queries occur when you fetch a list of entities, then make an additional query for each entity to load related data. Use eager loading with `relations`, query builder joins, or DataLoader to batch queries efficiently.
 
@@ -3132,7 +3120,7 @@ Reference: [TypeORM Relations](https://typeorm.io/relations)
 
 ### 7.2 Use Database Migrations
 
-**Impact: HIGH** - Enables safe, repeatable database schema changes
+**Impact: HIGH** — Enables safe, repeatable database schema changes
 
 Never use `synchronize: true` in production. Use migrations for all schema changes. Migrations provide version control for your database, enable safe rollbacks, and ensure consistency across all environments.
 
@@ -3259,7 +3247,7 @@ Reference: [TypeORM Migrations](https://typeorm.io/migrations)
 
 ### 7.3 Use Transactions for Multi-Step Operations
 
-**Impact: HIGH** - Ensures data consistency in multi-step operations
+**Impact: HIGH** — Ensures data consistency in multi-step operations
 
 When multiple database operations must succeed or fail together, wrap them in a transaction. This prevents partial updates that leave your data in an inconsistent state. Use TypeORM's transaction APIs or the DataSource query runner for complex scenarios.
 
@@ -3401,7 +3389,7 @@ Reference: [TypeORM Transactions](https://typeorm.io/transactions)
 
 ### 8.1 Use DTOs and Serialization for API Responses
 
-**Impact: MEDIUM** - Response DTOs prevent accidental data exposure and ensure consistency
+**Impact: MEDIUM** — Response DTOs prevent accidental data exposure and ensure consistency
 
 Never return entity objects directly from controllers. Use response DTOs with class-transformer's `@Exclude()` and `@Expose()` decorators to control exactly what data is sent to clients. This prevents accidental exposure of sensitive fields and provides a stable API contract.
 
@@ -3581,7 +3569,7 @@ Reference: [NestJS Serialization](https://docs.nestjs.com/techniques/serializati
 
 ### 8.2 Use Interceptors for Cross-Cutting Concerns
 
-**Impact: MEDIUM-HIGH** - Interceptors provide clean separation for cross-cutting logic
+**Impact: MEDIUM-HIGH** — Interceptors provide clean separation for cross-cutting logic
 
 Interceptors can transform responses, add logging, handle caching, and measure performance without polluting your business logic. They wrap the route handler execution, giving you access to both the request and response streams.
 
@@ -3781,7 +3769,7 @@ Reference: [NestJS Interceptors](https://docs.nestjs.com/interceptors)
 
 ### 8.3 Use Pipes for Input Transformation
 
-**Impact: MEDIUM** - Pipes ensure clean, validated data reaches your handlers
+**Impact: MEDIUM** — Pipes ensure clean, validated data reaches your handlers
 
 Use built-in pipes like `ParseIntPipe`, `ParseUUIDPipe`, and `DefaultValuePipe` for common transformations. Create custom pipes for business-specific transformations. Pipes separate validation/transformation logic from controllers.
 
@@ -3984,7 +3972,7 @@ Reference: [NestJS Pipes](https://docs.nestjs.com/pipes)
 
 ### 8.4 Use API Versioning for Breaking Changes
 
-**Impact: MEDIUM** - Versioning allows you to evolve APIs without breaking existing clients
+**Impact: MEDIUM** — Versioning allows you to evolve APIs without breaking existing clients
 
 Use NestJS built-in versioning when making breaking changes to your API. Choose a versioning strategy (URI, header, or media type) and apply it consistently. This allows old clients to continue working while new clients use updated endpoints.
 
@@ -4177,7 +4165,7 @@ Reference: [NestJS Versioning](https://docs.nestjs.com/techniques/versioning)
 
 ### 9.1 Implement Health Checks for Microservices
 
-**Impact: MEDIUM-HIGH** - Health checks enable orchestrators to manage service lifecycle
+**Impact: MEDIUM-HIGH** — Health checks enable orchestrators to manage service lifecycle
 
 Implement liveness and readiness probes using `@nestjs/terminus`. Liveness checks determine if the service should be restarted. Readiness checks determine if the service can accept traffic. Proper health checks enable Kubernetes and load balancers to route traffic correctly.
 
@@ -4401,7 +4389,7 @@ Reference: [NestJS Terminus](https://docs.nestjs.com/recipes/terminus)
 
 ### 9.2 Use Message and Event Patterns Correctly
 
-**Impact: MEDIUM** - Proper patterns ensure reliable microservice communication
+**Impact: MEDIUM** — Proper patterns ensure reliable microservice communication
 
 NestJS microservices support two communication patterns: request-response (MessagePattern) and event-based (EventPattern). Use MessagePattern when you need a response, and EventPattern for fire-and-forget notifications. Understanding the difference prevents communication bugs.
 
@@ -4566,7 +4554,7 @@ Reference: [NestJS Microservices](https://docs.nestjs.com/microservices/basics)
 
 ### 9.3 Use Message Queues for Background Jobs
 
-**Impact: MEDIUM-HIGH** - Queues enable reliable background processing
+**Impact: MEDIUM-HIGH** — Queues enable reliable background processing
 
 Use `@nestjs/bullmq` for background job processing. Queues decouple long-running tasks from HTTP requests, enable retry logic, and distribute workload across workers. Use them for emails, file processing, notifications, and any task that shouldn't block user requests.
 
@@ -4820,7 +4808,7 @@ Reference: [NestJS Queues](https://docs.nestjs.com/techniques/queues)
 
 ### 10.1 Implement Graceful Shutdown
 
-**Impact: MEDIUM-HIGH** - Proper shutdown handling ensures zero-downtime deployments
+**Impact: MEDIUM-HIGH** — Proper shutdown handling ensures zero-downtime deployments
 
 Handle SIGTERM and SIGINT signals to gracefully shutdown your NestJS application. Stop accepting new requests, wait for in-flight requests to complete, close database connections, and clean up resources. This prevents data loss and connection errors during deployments.
 
@@ -5040,7 +5028,7 @@ Reference: [NestJS Lifecycle Events](https://docs.nestjs.com/fundamentals/lifecy
 
 ### 10.2 Use ConfigModule for Environment Configuration
 
-**Impact: LOW-MEDIUM** - Proper configuration prevents deployment failures
+**Impact: LOW-MEDIUM** — Proper configuration prevents deployment failures
 
 Use `@nestjs/config` for environment-based configuration. Validate configuration at startup to fail fast on misconfigurations. Use namespaced configuration for organization and type safety.
 
@@ -5205,7 +5193,7 @@ Reference: [NestJS Configuration](https://docs.nestjs.com/techniques/configurati
 
 ### 10.3 Use Structured Logging
 
-**Impact: MEDIUM-HIGH** - Structured logging enables effective debugging and monitoring
+**Impact: MEDIUM-HIGH** — Structured logging enables effective debugging and monitoring
 
 Use NestJS Logger with structured JSON output in production. Include contextual information (request ID, user ID, operation) to trace requests across services. Avoid console.log and implement proper log levels.
 

@@ -158,14 +158,17 @@ function generateTableOfContents(rulesByCategory: Map<string, Rule[]>): string {
     const rules = rulesByCategory.get(cat.name);
     if (!rules || rules.length === 0) continue;
 
-    toc += `### ${cat.section}. ${cat.name} (${cat.impact})\n\n`;
+    // Section anchor format: #1-architecture
+    const sectionAnchor = `${cat.section}-${cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    toc += `${cat.section}. [${cat.name}](#${sectionAnchor}) — **${cat.impact}**\n`;
 
     for (let i = 0; i < rules.length; i++) {
       const rule = rules[i];
-      const anchor = rule.frontmatter.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      toc += `- [${cat.section}.${i + 1} ${rule.frontmatter.title}](#${anchor})\n`;
+      // Rule anchor format: #11-rule-title
+      const ruleNum = `${cat.section}${i + 1}`;
+      const anchor = `${ruleNum}-${rule.frontmatter.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      toc += `   - ${cat.section}.${i + 1} [${rule.frontmatter.title}](#${anchor})\n`;
     }
-    toc += '\n';
   }
 
   return toc;
@@ -190,9 +193,17 @@ function generateAgentsMd(rules: Rule[], metadata: any): string {
   // Build document
   let doc = `# NestJS Best Practices
 
-**Version:** ${metadata.version}
-**Organization:** ${metadata.organization}
-**Published:** ${metadata.date}
+**Version ${metadata.version}**
+${metadata.organization}
+${metadata.date}
+
+> **Note:**
+> This document is mainly for agents and LLMs to follow when maintaining,
+> generating, or refactoring NestJS codebases. Humans may also find it
+> useful, but guidance here is optimized for automation and consistency
+> by AI-assisted workflows.
+
+---
 
 ## Abstract
 
@@ -218,9 +229,9 @@ ${metadata.abstract}
       const rule = categoryRules[i];
       const ruleNumber = `${cat.section}.${i + 1}`;
 
-      // Add rule header with number
+      // Add rule header with number (anchor will be auto-generated as #11-title)
       doc += `### ${ruleNumber} ${rule.frontmatter.title}\n\n`;
-      doc += `**Impact: ${rule.frontmatter.impact}** - ${rule.frontmatter.impactDescription}\n\n`;
+      doc += `**Impact: ${rule.frontmatter.impact}** — ${rule.frontmatter.impactDescription}\n\n`;
 
       // Add rule content (skip the first header since we already added it)
       let ruleContent = rule.content;
