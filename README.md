@@ -75,7 +75,7 @@ Brief explanation of the rule and why it matters.
 Optional explanatory text after examples.
 
 Reference: [NestJS Documentation](https://docs.nestjs.com)
-```
+
 
 ## File Naming Convention
 
