@@ -4,7 +4,7 @@ A comprehensive Claude Code skill for NestJS best practices, providing AI agents
 
 ## Overview
 
-This skillset contains **37 rules** across **10 categories**, covering everything from architecture patterns to deployment strategies. Each rule includes:
+This skillset contains **40 rules** across **10 categories**, covering everything from architecture patterns to deployment strategies. Each rule includes:
 
 - Impact assessment (CRITICAL, HIGH, MEDIUM-HIGH, MEDIUM, LOW-MEDIUM)
 - Incorrect code examples showing anti-patterns
@@ -15,8 +15,8 @@ This skillset contains **37 rules** across **10 categories**, covering everythin
 
 | Section | Category | Impact | Rules |
 |---------|----------|--------|-------|
-| 1 | Architecture | CRITICAL | 5 |
-| 2 | Dependency Injection | CRITICAL | 4 |
+| 1 | Architecture | CRITICAL | 6 |
+| 2 | Dependency Injection | CRITICAL | 6 |
 | 3 | Error Handling | HIGH | 3 |
 | 4 | Security | HIGH | 5 |
 | 5 | Performance | HIGH | 4 |
