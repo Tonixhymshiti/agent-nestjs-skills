@@ -11,7 +11,7 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
-  base: "/nestjs-best-practices-skill/",
+  base: "/agent-nestjs-skills/",
   build: {
     rollupOptions: {
       output: {
