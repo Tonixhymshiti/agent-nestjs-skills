@@ -1,5 +1,7 @@
 # NestJS Best Practices
 
+📖 [For Humans <3](https://kadajett.github.io/agent-nestjs-skills/)
+
 A structured repository for creating and maintaining NestJS Best Practices optimized for agents and LLMs.
 
 ## Installation
