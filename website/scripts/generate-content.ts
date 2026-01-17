@@ -8,6 +8,7 @@ import { createHighlighter, type Highlighter } from "shiki";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const BASE_PATH = "/agent-nestjs-skills";
 const RULES_DIR = path.resolve(__dirname, "../../rules");
 const CONTENT_DIR = path.resolve(__dirname, "../content");
 const OUTPUT_FILE = path.resolve(__dirname, "../src/content/generated.ts");
@@ -112,6 +113,26 @@ function createMarkedRenderer(hl: Highlighter): marked.Renderer {
         .replace(/>/g, "&gt;");
       return `<pre><code class="language-${language}">${escaped}</code></pre>`;
     }
+  };
+
+  // Rewrite internal links to include base path
+  renderer.link = function (this: marked.Renderer, token: Tokens.Link): string {
+    const href = token.href || "";
+    const title = token.title ? ` title="${token.title}"` : "";
+    const text = this.parser?.parseInline(token.tokens) || token.text;
+
+    // Check if it's an internal link (starts with /)
+    let finalHref = href;
+    if (href.startsWith("/") && !href.startsWith("//")) {
+      finalHref = `${BASE_PATH}${href}`;
+    }
+
+    // External links open in new tab
+    if (href.startsWith("http://") || href.startsWith("https://")) {
+      return `<a href="${finalHref}"${title} target="_blank" rel="noopener noreferrer">${text}</a>`;
+    }
+
+    return `<a href="${finalHref}"${title}>${text}</a>`;
   };
 
   // Improve table rendering
