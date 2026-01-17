@@ -341,7 +341,7 @@ describe('UsersModule', () => {
 | Dynamic modules | Configurable, reusable modules |
 | Domain-driven structure | Large applications with complex domains |
 
-## Next Steps
+## Additional Reading
 
 - [Dependency Injection Deep Dive](/guides/dependency-injection) - Understand DI scopes and patterns
 - [Avoiding Circular Dependencies](/rules/arch-avoid-circular-deps) - The #1 architecture killer

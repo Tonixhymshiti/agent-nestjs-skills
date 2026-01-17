@@ -1,7 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { guides, guidesList } from "@/content/generated";
 import { ChevronLeft, ChevronRight, Clock, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/guides/$slug")({
   component: GuidePage,
@@ -126,27 +125,39 @@ function GuidePage() {
       {/* Navigation */}
       <nav
         aria-label="Guide navigation"
-        className="flex items-center justify-between border-t border-border pt-6"
+        className="mt-12 grid gap-4 sm:grid-cols-2"
       >
         {prevGuide ? (
-          <Button asChild variant="ghost" className="gap-2">
-            <Link to="/guides/$slug" params={{ slug: prevGuide.slug }}>
+          <Link
+            to="/guides/$slug"
+            params={{ slug: prevGuide.slug }}
+            className="group flex flex-col gap-2 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-accent"
+          >
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <ChevronLeft className="size-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{prevGuide.title}</span>
-              <span className="sm:hidden">Previous</span>
-            </Link>
-          </Button>
+              Previous
+            </span>
+            <span className="font-medium group-hover:text-primary">
+              {prevGuide.title}
+            </span>
+          </Link>
         ) : (
           <div />
         )}
         {nextGuide ? (
-          <Button asChild variant="ghost" className="gap-2">
-            <Link to="/guides/$slug" params={{ slug: nextGuide.slug }}>
-              <span className="hidden sm:inline">{nextGuide.title}</span>
-              <span className="sm:hidden">Next</span>
+          <Link
+            to="/guides/$slug"
+            params={{ slug: nextGuide.slug }}
+            className="group flex flex-col gap-2 rounded-lg border border-border bg-card p-4 text-right transition-colors hover:border-primary hover:bg-accent sm:col-start-2"
+          >
+            <span className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
+              Next
               <ChevronRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
+            </span>
+            <span className="font-medium group-hover:text-primary">
+              {nextGuide.title}
+            </span>
+          </Link>
         ) : (
           <div />
         )}

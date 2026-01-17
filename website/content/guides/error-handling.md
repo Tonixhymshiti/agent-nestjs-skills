@@ -507,7 +507,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 | ValidationPipe | Input validation |
 | Structured logging | Error tracking and debugging |
 
-## Next Steps
+## Additional Reading
 
 - [Use Exception Filters](/rules/error-use-exception-filters) - Detailed rule on filters
 - [Handle Async Errors](/rules/error-handle-async-errors) - Async patterns

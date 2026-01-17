@@ -461,7 +461,7 @@ describe('UsersService', () => {
 | `Scope.TRANSIENT` | Isolated instances |
 | Interface + Token | Clean architecture, testability |
 
-## Next Steps
+## Additional Reading
 
 - [Error Handling Patterns](/guides/error-handling) - Build robust error handling
 - [DI Scope Awareness](/rules/di-scope-awareness) - Understand scope implications

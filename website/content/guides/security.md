@@ -505,7 +505,7 @@ async findByEmail(email: string) {
 - [ ] SQL injection prevented
 - [ ] Secrets in environment variables
 
-## Next Steps
+## Additional Reading
 
 - [Validate All Input](/rules/security-validate-all-input) - Detailed validation patterns
 - [Use Guards](/rules/security-use-guards) - Authorization patterns
