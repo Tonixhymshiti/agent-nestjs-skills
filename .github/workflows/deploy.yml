@@ -39,6 +39,9 @@ jobs:
         run: npm run build
         working-directory: website
 
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp website/dist/index.html website/dist/404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
