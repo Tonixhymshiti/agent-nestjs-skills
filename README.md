@@ -136,6 +136,19 @@ When adding or modifying rules:
 5. Run the build script to regenerate AGENTS.md
 6. Rules are automatically sorted by title - no need to manage numbers!
 
+## Documentation Website
+
+The documentation website source code lives on the [`docs` branch](https://github.com/Kadajett/agent-nestjs-skills/tree/docs/website). This separation keeps the skill installation lightweight while maintaining the full documentation site.
+
+To contribute to the website:
+
+```bash
+git checkout docs
+cd website
+npm install
+npm run dev
+```
+
 ## Acknowledgments
 
 - Inspired by the [Vercel React Best Practices](https://github.com/vercel-labs/agent-skills) skill structure
