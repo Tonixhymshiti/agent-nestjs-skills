@@ -153,3 +153,11 @@ npm run dev
 
 - Inspired by the [Vercel React Best Practices](https://github.com/vercel-labs/agent-skills) skill structure
 - Compatible with [skills](https://github.com/vercel-labs/skills) for easy installation across coding agents
+
+## Compatible Agents
+
+These NestJS skills work with:
+
+- [Claude Code](https://claude.ai/code) - Anthropic's official CLI
+- [AdaL](https://sylph.ai/adal) - Self-evolving AI coding agent with MCP support
+
