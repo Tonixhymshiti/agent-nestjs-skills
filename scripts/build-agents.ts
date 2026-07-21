@@ -6,7 +6,7 @@
  * Usage: npx ts-node scripts/build-agents.ts
  *
  * This script:
- * 1. Reads all rule files from the rules/ directory
+ * 1. Reads all rule files from the skills/rules/ directory
  * 2. Parses YAML frontmatter for metadata
  * 3. Groups rules by category based on filename prefix
  * 4. Generates a consolidated AGENTS.md file
@@ -117,7 +117,7 @@ function readMetadata(): any {
 }
 
 function readRules(): Rule[] {
-  const rulesDir = path.join(__dirname, '..', 'rules');
+  const rulesDir = path.join(__dirname, '..', 'skills', 'rules');
   const files = fs.readdirSync(rulesDir)
     .filter(f => f.endsWith('.md') && !f.startsWith('_'));
 

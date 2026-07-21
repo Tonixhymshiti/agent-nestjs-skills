@@ -114,8 +114,8 @@ Reference these guidelines when:
 Read individual rule files for detailed explanations and code examples:
 
 ```
-skills/rules/arch-avoid-circular-deps.md
-skills/rules/security-validate-all-input.md
+rules/arch-avoid-circular-deps.md
+rules/security-validate-all-input.md
 ```
 
 Each rule file contains:
@@ -123,7 +123,3 @@ Each rule file contains:
 - Incorrect code example with explanation
 - Correct code example with explanation
 - Additional context and references
-
-## Full Compiled Document
-
-For the complete guide with all rules expanded: `AGENTS.md`

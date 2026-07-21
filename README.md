@@ -30,10 +30,12 @@ npx skills add Kadajett/agent-nestjs-skills -a claude-code -a cursor
 
 ## Structure
 
-- `rules/` - Individual rule files (one per rule)
+- `skills/` - Skill package for agent installation
+  - `SKILL.md` - Skill manifest and quick reference
+  - `rules/` - Individual rule files (one per rule)
+- `contributor/` - Maintainer resources (not installed with the skill)
   - `_sections.md` - Section metadata (titles, impacts, descriptions)
   - `_template.md` - Template for creating new rules
-  - `area-description.md` - Individual rule files
 - `scripts/` - Build scripts and utilities
 - `metadata.json` - Document metadata (version, organization, abstract)
 - __`AGENTS.md`__ - Compiled output (generated)
@@ -54,7 +56,7 @@ npx skills add Kadajett/agent-nestjs-skills -a claude-code -a cursor
 
 ## Creating a New Rule
 
-1. Copy `rules/_template.md` to `rules/area-description.md`
+1. Copy `contributor/_template.md` to `skills/rules/area-description.md`
 2. Choose the appropriate area prefix:
    - `arch-` for Architecture (Section 1)
    - `di-` for Dependency Injection (Section 2)
@@ -105,7 +107,6 @@ Reference: [NestJS Documentation](https://docs.nestjs.com)
 
 ## File Naming Convention
 
-- Files starting with `_` are special (excluded from build)
 - Rule files: `area-description.md` (e.g., `arch-avoid-circular-deps.md`)
 - Section is automatically inferred from filename prefix
 - Rules are sorted alphabetically by title within each section
@@ -130,7 +131,7 @@ Reference: [NestJS Documentation](https://docs.nestjs.com)
 When adding or modifying rules:
 
 1. Use the correct filename prefix for your section
-2. Follow the `_template.md` structure
+2. Follow the `contributor/_template.md` structure
 3. Include clear bad/good examples with explanations
 4. Add appropriate tags
 5. Run the build script to regenerate AGENTS.md
